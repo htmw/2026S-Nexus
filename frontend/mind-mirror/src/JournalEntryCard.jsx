@@ -26,6 +26,7 @@ export default function JournalEntryCard({
   subtitle = "Take a moment to reflect. No format needed — just write naturally.",
   placeholder = "What's on your mind today? How did your day go?",
   onSubmitEntry = () => {},
+  maxChars = 2000,
 }) {
   const [text, setText] = useState("");
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
@@ -124,7 +125,12 @@ export default function JournalEntryCard({
             className="mm-textarea"
             placeholder={placeholder}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (next.length <= maxChars) {
+                setText(next);
+              }
+            }}
           />
 
           <div className="mm-entry__footer">
@@ -168,13 +174,16 @@ export default function JournalEntryCard({
                         : "Draft saved"
                     : "Draft not saved yet"}
                 </span>
-                <span className="mm-chars">{charCount} characters</span>
+                <span className="mm-chars">
+                  {charCount} / {maxChars} characters
+                </span>
                 </div>
 
               <div className="mm-actionsRow">
                 <button type="button" className="mm-clear" onClick={handleClear}>
                   Clear draft
                 </button>
+                
 
                 <button
                   type="button"
