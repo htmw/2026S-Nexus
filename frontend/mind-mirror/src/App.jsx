@@ -1,5 +1,6 @@
 import Navbar from "./Navbar";
 import GreetingBar from "./GreetingBar";
+import JournalEntryCard from "./JournalEntryCard";
 
 
 export default function App() {
@@ -13,6 +14,11 @@ export default function App() {
         entries={0}
         stabilityLabel="Very stable"
         consistencyLabel="0-day streak"
+      />
+      <JournalEntryCard
+        onSubmitEntry={(entry) => {
+          console.log("Submitted entry:", entry);
+        }}
       />
     </div>
   );
