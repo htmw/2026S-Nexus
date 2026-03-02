@@ -262,7 +262,6 @@
   color: #2f2f2f;
 }
 
-/* Paper-like body (very subtle lines, matches “journal vibe”) */
 .pe-paper {
   border-radius: 14px;
   background: rgba(251, 244, 238, 0.85);
