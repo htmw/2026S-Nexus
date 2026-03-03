@@ -97,7 +97,7 @@ export default function PastEntries() {
       if (!map.has(e.date)) map.set(e.date, []);
       map.get(e.date).push(e);
     }
-    // optional: sort entries within each day by timeLabel (simple)
+    //sort entries within each day by timeLabel (simple)
     for (const [k, arr] of map.entries()) {
       arr.sort((a, b) => (a.timeLabel > b.timeLabel ? 1 : -1));
       map.set(k, arr);

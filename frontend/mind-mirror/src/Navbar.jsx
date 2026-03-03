@@ -1,46 +1,44 @@
 import React from "react";
 import "./Navbar.css";
 import logo from "./assets/logo3.png";
+import { NavLink } from "react-router-dom";
 
 export default function Navbar({
   username = "User",
-  onNavigate = () => {},
   onToggleTheme = () => {},
   onLogout = () => {},
-  logoSrc = "",
 }) {
-  const tabs = ["Journal", "Insights", "Past Entries"];
+  const tabs = [
+    { label: "Journal", to: "/journal" },
+    { label: "Insights", to: "/insights" },
+    { label: "Past Entries", to: "/past-entries" },
+  ];
 
   return (
     <header className="mm-navbar">
       <div className="mm-navbar__inner">
         {/* Left: Brand */}
         <div className="mm-brand">
-          <button
-            className="mm-brand__clickable"
-            type="button"
-            onClick={() => console.log("Home clicked")}
-          >
-            <img
-              src={logo}
-              alt="Mind Mirror logo"
-              className="mm-brand__logoImg"
-            />
+          <NavLink to="/journal" className="mm-brand__clickable">
+            <img src={logo} alt="Mind Mirror logo" className="mm-brand__logoImg" />
             <span className="mm-brand__name">Mind Mirror</span>
-          </button>
+          </NavLink>
         </div>
 
         {/* Center: Tabs */}
         <nav className="mm-tabs" aria-label="Primary">
           {tabs.map((t) => (
-            <button
-              key={t}
-              className="mm-tab"
-              onClick={() => onNavigate(t)}
-              type="button"
+            <NavLink
+              key={t.to}
+              to={t.to}
+              className={({ isActive }) =>
+                // keep your hover-only “pill” look; only add is-active if you want later
+                `mm-tab ${isActive ? "is-active" : ""}`
+              }
+              end={t.to === "/journal"} // makes /journal not stay active on other routes
             >
-              {t}
-            </button>
+              {t.label}
+            </NavLink>
           ))}
         </nav>
 
@@ -71,8 +69,8 @@ export default function Navbar({
       </div>
 
       <div className="mm-navbar__dividerWrapper">
-    <div className="mm-navbar__divider" />
-  </div>
+        <div className="mm-navbar__divider" />
+      </div>
     </header>
   );
 }

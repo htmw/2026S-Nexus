@@ -40,6 +40,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .mm-brand__logoImg {
@@ -81,6 +82,8 @@
   font-weight: 600;
   color: #777;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .mm-tab:hover,
