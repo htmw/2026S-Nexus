@@ -235,7 +235,6 @@ export default function Insights() {
         <div className="ins-grid2">
           <MiniLineChart
             title="Mood Trend"
-            subtitle="Average mood over time"
             tone="blue"
             points={moodPoints}
             labels={moodLabels}
