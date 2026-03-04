@@ -1,33 +1,46 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./JournalEntryCard.css";
+import { checkinAPI } from "../services/api";
 
 const STORAGE_KEY = "mindmirror:draft";
 
 const MOODS = [
-  { key: "awful", label: "Awful", emoji: "😢" },
-  { key: "meh", label: "Meh", emoji: "🙁" },
-  { key: "okay", label: "Okay", emoji: "😐" },
-  { key: "good", label: "Good", emoji: "😄" },
-  { key: "great", label: "Great", emoji: "🤩" },
+  { key: "awful", label: "Awful", emoji: "😢"},
+  { key: "bad", label: "Bad", emoji: "🙁"},
+  { key: "meh", label: "Meh", emoji: "😐"},
+  { key: "good", label: "Good", emoji: "😄"},
+  { key: "great", label: "Great", emoji: "🤩"},
 ];
+
+// function estimateMood(text, selectedMoodKey) {
+//   // If user explicitly chose a mood, use it.
+//   if (selectedMoodKey) {
+//     const found = MOODS.find((m) => m.key === selectedMoodKey);
+//     return found ? found.label : "Neutral";
+//   }
+//   //If not, return neutral
+//   return "Neutral";
+// }
 
 function estimateMood(text, selectedMoodKey) {
   // If user explicitly chose a mood, use it.
   if (selectedMoodKey) {
-    const found = MOODS.find((m) => m.key === selectedMoodKey);
-    return found ? found.label : "Neutral";
+    const idx = MOODS.findIndex((m) => m.key === selectedMoodKey);
+    if (idx !== -1) {
+      return { label: MOODS[idx].label, index: idx + 1 };
+    }
   }
-  //If not, return neutral
-  return "Neutral";
+  // If not, return neutral.
+  return { label: "Neutral", index: 3 };
 }
 
 export default function JournalEntryCard({
   title = "How are you feeling today?",
   subtitle = "Take a moment to reflect. No format needed — just write naturally.",
   placeholder = "What's on your mind today? How did your day go?",
-  onSubmitEntry = () => {},
   maxChars = 2000,
-}) {
+}) 
+{
   const [text, setText] = useState("");
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
 
@@ -36,6 +49,19 @@ export default function JournalEntryCard({
     isDirty: false,
     lastSavedAt: null,
   });
+
+  const onSubmitEntry = async (entry) => {
+    try {
+      await checkinAPI.create({
+        mood: entry.mood,
+        reflection: entry.text || null,
+      });
+      alert("Entry submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting entry:", error);
+      alert("Failed to submit entry. Please try again.");
+    }
+  }
 
   // Load draft once
   useEffect(() => {
@@ -102,9 +128,10 @@ export default function JournalEntryCard({
 
     const payload = {
       text: text.trim(),
-      mood: estimatedMood,
-      createdAt: new Date().toISOString(),
+      mood: estimatedMood.index,
+      // createdAt: new Date().toISOString(),
     };
+    console.log("Submitting entry:", payload);
 
     onSubmitEntry(payload);
 
@@ -159,7 +186,7 @@ export default function JournalEntryCard({
               </div>
 
               <div className="mm-estimated">
-                Estimated mood: <span className="mm-estimated__value">{estimatedMood}</span>
+                Estimated mood: <span className="mm-estimated__value">{estimatedMood.label}</span>
               </div>
             </div>
 

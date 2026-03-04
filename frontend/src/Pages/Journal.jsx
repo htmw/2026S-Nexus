@@ -1,6 +1,6 @@
 import React from "react";
-import GreetingBar from "../GreetingBar";
-import JournalEntryCard from "../JournalEntryCard";
+import GreetingBar from "./GreetingBar";
+import JournalEntryCard from "./JournalEntryCard";
 
 export default function Journal() {
   return (
