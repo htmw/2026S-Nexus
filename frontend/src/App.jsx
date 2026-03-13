@@ -5,11 +5,13 @@ import Navbar from "./Pages/Navbar";
 import Journal from "./Pages/Journal";
 import Insights from "./Pages/Insights";
 import PastEntries from "./Pages/PastEntries";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#fbfaf7" }}>
       <Navbar />
+      <Toaster/>
 
       <Routes>
         <Route path="/" element={<Navigate to="/journal" replace />} />
