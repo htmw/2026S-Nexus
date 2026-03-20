@@ -6,6 +6,8 @@ const api = axios.create({
 
 export const checkinAPI = {
   create: (data) => api.post("/checkin", data),
+  list: () => api.get("/checkins"),
+  summary: () => api.get("/sentiment-summary"),
 };
 
 export default api;

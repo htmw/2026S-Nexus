@@ -129,6 +129,8 @@ Because model files are large, use Git LFS:
 ```zsh
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1
 git lfs install
+git lfs track "backend/models/*.zip"
+git add .gitattributes
 git lfs ls-files
 ```
 
@@ -181,6 +183,8 @@ pkill -f "vite --host 127.0.0.1 --port 5173"
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/backend
 /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python -m unittest -v test_model_integration.py test_finetune_pipeline.py
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1
+find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 git status
 git add .
 git commit -m "your message"

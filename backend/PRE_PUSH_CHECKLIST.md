@@ -32,6 +32,8 @@ kill $SERVER_PID; wait $SERVER_PID 2>/dev/null || true
 ```bash
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1
 git lfs install
+git lfs track "backend/models/*.zip"
+git add .gitattributes
 git lfs ls-files
 ```
 
@@ -42,6 +44,8 @@ Expected tracked model path:
 ## 5) Commit and push
 
 ```bash
+find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 git add .
 git commit -m "Your commit message"
 git push

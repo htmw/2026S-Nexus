@@ -36,6 +36,19 @@ SENTIMENT_USE_REMOTE_FALLBACK=true
 
 For GitHub pushes, track `backend/models/mood_model.zip` with Git LFS (required for large model files).
 
+```bash
+git lfs install
+git lfs track "backend/models/*.zip"
+git add .gitattributes
+```
+
+Before committing, remove Python runtime cache files if they were generated locally:
+
+```bash
+find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+```
+
 ### Improve response speed
 
 If first response feels slow, enable preload and reduce token length:

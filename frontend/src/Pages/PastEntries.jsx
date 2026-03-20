@@ -1,48 +1,42 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./PastEntries.css";
+import { checkinAPI } from "../services/api";
 
-/**
- * MOCK DATA (replace later with your real entries)
- * Each entry has: id, date (YYYY-MM-DD), timeLabel, moodLabel, title, text
- */
-const MOCK_ENTRIES = [
-  {
-    id: "e1",
-    date: "2026-03-01",
-    timeLabel: "9:12 PM",
-    moodLabel: "Balanced",
-    title: "Long day, calmer ending",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e2",
-    date: "2026-03-01",
-    timeLabel: "11:08 PM",
-    moodLabel: "Reflective",
-    title: "Thinking about priorities",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e3",
-    date: "2026-03-02",
-    timeLabel: "7:40 AM",
-    moodLabel: "Anxious",
-    title: "Woke up tense",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e4",
-    date: "2026-03-01",
-    timeLabel: "6:15 PM",
-    moodLabel: "Happy",
-    title: "Good news!",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-];
+const MOOD_LABELS = {
+  0: "Awful",
+  1: "Bad",
+  2: "Meh",
+  3: "Balanced",
+  4: "Good",
+  5: "Great",
+};
+
+function entryTitle(reflection, sentiment) {
+  const clean = (reflection || "").trim();
+  if (!clean) {
+    return sentiment === "NEGATIVE" ? "Low-energy reflection" : "Quick reflection";
+  }
+  const firstLine = clean.split(/\n+/)[0].trim();
+  const compact = firstLine.length > 48 ? `${firstLine.slice(0, 45)}…` : firstLine;
+  return compact || "Journal entry";
+}
+
+function transformEntry(entry) {
+  const createdAt = new Date(entry.created_at);
+  return {
+    id: entry.id,
+    createdAt,
+    date: toISODate(createdAt),
+    timeLabel: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+    moodLabel: MOOD_LABELS[entry.mood] || entry.sentiment || "Entry",
+    title: entryTitle(entry.reflection, entry.sentiment),
+    text: entry.reflection || "",
+    sentiment: entry.sentiment,
+    suggestion: entry.suggestion,
+    predictedMood: entry.predicted_mood,
+    confidence: entry.confidence,
+  };
+}
 
 function formatLongDate(iso) {
   // iso = "YYYY-MM-DD"
@@ -90,10 +84,47 @@ export default function PastEntries() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => toISODate(new Date()));
   const [selectedEntryId, setSelectedEntryId] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadEntries() {
+      setIsLoading(true);
+      setErrorMessage("");
+      try {
+        const response = await checkinAPI.list();
+        const nextEntries = (response.data?.entries || [])
+          .map(transformEntry)
+          .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+        if (!isMounted) return;
+        setEntries(nextEntries);
+        if (nextEntries.length) {
+          setSelectedDate(nextEntries[0].date);
+          setSelectedEntryId(nextEntries[0].id);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        setErrorMessage("Could not load saved entries right now.");
+        setEntries([]);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadEntries();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const entriesByDate = useMemo(() => {
     const map = new Map();
-    for (const e of MOCK_ENTRIES) {
+    for (const e of entries) {
       if (!map.has(e.date)) map.set(e.date, []);
       map.get(e.date).push(e);
     }
@@ -103,19 +134,19 @@ export default function PastEntries() {
       map.set(k, arr);
     }
     return map;
-  }, []);
+  }, [entries]);
 
   const selectedDayEntries = useMemo(() => {
     return entriesByDate.get(selectedDate) ?? [];
   }, [entriesByDate, selectedDate]);
 
   const selectedEntry = useMemo(() => {
-    const all = MOCK_ENTRIES;
+    const all = entries;
     const found =
       all.find((e) => e.id === selectedEntryId) ||
       (selectedDayEntries.length ? selectedDayEntries[0] : null);
     return found;
-  }, [selectedEntryId, selectedDayEntries]);
+  }, [entries, selectedEntryId, selectedDayEntries]);
 
   // whenever date changes, default select first entry
   React.useEffect(() => {
@@ -200,13 +231,19 @@ export default function PastEntries() {
               <div className="pe-listHeader">
                 <div className="pe-listTitle">{formatLongDate(selectedDate)}</div>
                 <div className="pe-listSub">
-                  {selectedDayEntries.length
+                  {isLoading
+                    ? "Loading entries..."
+                    : selectedDayEntries.length
                     ? `${selectedDayEntries.length} entr${selectedDayEntries.length === 1 ? "y" : "ies"}`
                     : "No entries"}
                 </div>
               </div>
 
-              {selectedDayEntries.length ? (
+              {errorMessage ? (
+                <div className="pe-emptyList">{errorMessage}</div>
+              ) : isLoading ? (
+                <div className="pe-emptyList">Loading your saved entries…</div>
+              ) : selectedDayEntries.length ? (
                 <div className="pe-entryList">
                   {selectedDayEntries.map((e) => {
                     const active = e.id === (selectedEntry?.id ?? null);
@@ -250,6 +287,15 @@ export default function PastEntries() {
                   <div className="pe-paper">
                     <p className="pe-detailText">{selectedEntry.text}</p>
                   </div>
+                  {selectedEntry.suggestion ? (
+                    <div className="pe-feedbackBox">
+                      <div className="pe-feedbackHead">
+                        <span className="pe-feedbackLabel">Saved feedback</span>
+                        <span className="pe-detailMood">{selectedEntry.sentiment}</span>
+                      </div>
+                      <p className="pe-feedbackText">{selectedEntry.suggestion}</p>
+                    </div>
+                  ) : null}
                 </article>
               ) : (
                 <div className="pe-detailEmpty">
