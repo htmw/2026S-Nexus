@@ -103,7 +103,7 @@ Frontend URL:
 
 ```zsh
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/backend
-/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python -m unittest -v test_model_integration.py test_finetune_pipeline.py
+/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python -m unittest -v tests/test_model_integration.py tests/test_finetune_pipeline.py
 ```
 
 ## 5.2 API smoke check (single command)
@@ -117,6 +117,33 @@ echo "POST /api/checkin"; curl -s -X POST http://127.0.0.1:8000/api/checkin -H "
 echo "GET /api/sentiment-summary"; curl -s http://127.0.0.1:8000/api/sentiment-summary; echo; \
 kill $SERVER_PID; wait $SERVER_PID 2>/dev/null || true
 ```
+
+## 5.3 Team sync check (confirm data is in shared Atlas cluster)
+
+If a teammate cannot see entries in Atlas, run this checklist on their machine:
+
+1. Confirm backend startup log contains `Connected to MongoDB` (not fallback warning).
+2. Confirm `backend/.env` has the same `MONGODB_URI` cluster host and same `MONGODB_DATABASE` as the team.
+3. Confirm teammate IP is allowed in Atlas Network Access.
+
+Quick connection check:
+
+```zsh
+cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1
+PYTHONPATH="/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/backend" \
+"/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python" backend/tests/test_mongodb.py
+```
+
+Write a uniquely tagged entry through API:
+
+```zsh
+TAG="TEAM_SYNC_$(date +%s)"; echo "$TAG"
+curl -s -X POST http://127.0.0.1:8000/api/checkin \
+	-H "Content-Type: application/json" \
+	-d "{\"mood\":4,\"reflection\":\"$TAG atlas verification entry\"}"
+```
+
+Then search the same `TAG` string in Atlas `mind_mirror.checkins` to verify both teammates are writing/reading the same shared cluster.
 
 ## 6) Model + Git Notes
 
@@ -181,7 +208,7 @@ pkill -f "vite --host 127.0.0.1 --port 5173"
 
 ```zsh
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/backend
-/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python -m unittest -v test_model_integration.py test_finetune_pipeline.py
+/Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1/.venv/bin/python -m unittest -v tests/test_model_integration.py tests/test_finetune_pipeline.py
 cd /Users/krishnasiddharth/Downloads/2026S-Nexus-feature-sentiment-sprint1
 find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete

@@ -9,17 +9,17 @@ Use `.jsonl`, `.json`, or `.csv` with:
 - `reflection`: journal text
 - `sentiment`: one of `POSITIVE`, `NEUTRAL`, `NEGATIVE`
 
-A tiny starter dataset is included at `training/sample_journal_data.jsonl`.
+A tiny starter dataset is included at `tests/pipeline/sample_journal_data.jsonl`.
 
 ## Quick run
 
 ```bash
 cd backend
 source ../.venv/bin/activate
-python training/fine_tune_journal_sentiment.py \
-  --train-file training/sample_journal_data.jsonl \
-  --output-dir training/mood_sentiment_model \
-  --zip-output training/mood_sentiment_model.zip
+python tests/pipeline/fine_tune_journal_sentiment.py \
+  --train-file tests/pipeline/sample_journal_data.jsonl \
+  --output-dir tests/pipeline/mood_sentiment_model \
+  --zip-output tests/pipeline/mood_sentiment_model.zip
 ```
 
 ## Use in backend

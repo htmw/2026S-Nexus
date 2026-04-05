@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test MongoDB connection - run: python test_mongodb.py"""
+"""Test MongoDB connection - run: python tests/test_mongodb.py"""
 import os
 from dotenv import load_dotenv
 

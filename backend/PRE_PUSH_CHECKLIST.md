@@ -12,7 +12,7 @@ source ../.venv/bin/activate
 ## 2) Run tests
 
 ```bash
-python -m unittest -v test_model_integration.py test_finetune_pipeline.py
+python -m unittest -v tests/test_model_integration.py tests/test_finetune_pipeline.py
 ```
 
 ## 3) API smoke test (start + test + stop in one command)

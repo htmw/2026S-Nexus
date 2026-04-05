@@ -167,13 +167,13 @@ Returns aggregated sentiment counts across saved entries.
 Run model integration + fallback tests:
 
 ```bash
-python -m unittest -v test_model_integration.py
+python -m unittest -v tests/test_model_integration.py
 ```
 
 Run fine-tuning pipeline utility tests:
 
 ```bash
-python -m unittest -v test_finetune_pipeline.py
+python -m unittest -v tests/test_finetune_pipeline.py
 ```
 
 ## Fine-Tune on Journal Data
@@ -181,14 +181,14 @@ python -m unittest -v test_finetune_pipeline.py
 Train a sentiment model on your own journal dataset and export a zip model:
 
 ```bash
-python training/fine_tune_journal_sentiment.py \
-  --train-file training/sample_journal_data.jsonl \
-  --output-dir training/mood_sentiment_model \
-  --zip-output training/mood_sentiment_model.zip
+python tests/pipeline/fine_tune_journal_sentiment.py \
+  --train-file tests/pipeline/sample_journal_data.jsonl \
+  --output-dir tests/pipeline/mood_sentiment_model \
+  --zip-output tests/pipeline/mood_sentiment_model.zip
 ```
 
 Then set `SENTIMENT_LOCAL_MODEL_ZIP` in `backend/.env` to the generated zip path.
-More details: `training/README.md`.
+More details: `tests/pipeline/README.md`.
 
 ## Sprint 1 Tasks (Sanket - AI Generalist)
 
