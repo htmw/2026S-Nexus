@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection, get_db
 from app.routes.checkin import router as checkin_router
 from app.services.sentiment_service import warmup_sentiment_model
@@ -14,10 +15,22 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    mongodb_url = settings.MONGODB_URL.strip()
+    atlas_uri = mongodb_url.startswith("mongodb+srv://")
+
+    if settings.MONGODB_REQUIRE_ATLAS and not atlas_uri:
+        raise RuntimeError(
+            "Atlas MongoDB is required. Set MONGODB_URI in backend/.env with a mongodb+srv:// URI."
+        )
+
     await connect_to_mongo()
     if get_db() is not None:
         logger.info("Connected to MongoDB")
     else:
+        if settings.MONGODB_REQUIRE_ATLAS:
+            raise RuntimeError(
+                "Failed to connect to MongoDB Atlas. Check MONGODB_URI, credentials, and Atlas IP access list."
+            )
         logger.warning("MongoDB unavailable; using in-memory fallback for entries")
 
     should_warmup = os.getenv("SENTIMENT_PRELOAD_ON_STARTUP", "true").lower() == "true"

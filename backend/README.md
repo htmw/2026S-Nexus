@@ -22,6 +22,10 @@ cp .env.example .env
 # Edit .env with your team MongoDB credentials
 ```
 
+By default, startup enforces Atlas usage (`MONGODB_REQUIRE_ATLAS=true`).
+If `MONGODB_URI` is missing or not `mongodb+srv://...`, backend startup fails fast with a clear error.
+For temporary local-only development, set `MONGODB_REQUIRE_ATLAS=false` in `.env`.
+
 ### Use your local `mood_model.zip` (primary local model)
 
 The backend can load your zipped local model first, then fall back to the built-in local model, then optional remote endpoint.

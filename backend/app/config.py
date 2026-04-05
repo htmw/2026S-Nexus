@@ -15,8 +15,12 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("MONGODB_URL", "MONGODB_URI"),
     )
     DATABASE_NAME: str = Field(
-        default="mindmirror",
+        default="mind_mirror",
         validation_alias=AliasChoices("DATABASE_NAME", "MONGODB_DATABASE"),
+    )
+    MONGODB_REQUIRE_ATLAS: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("MONGODB_REQUIRE_ATLAS"),
     )
 
 
