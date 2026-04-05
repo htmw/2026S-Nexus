@@ -22,6 +22,12 @@ cp .env.example .env
 # Edit .env with your team MongoDB credentials
 ```
 
+Verify MongoDB connectivity before starting the API:
+
+```bash
+python tests/test_mongodb.py
+```
+
 By default, startup enforces Atlas usage (`MONGODB_REQUIRE_ATLAS=true`).
 If `MONGODB_URI` is missing or not `mongodb+srv://...`, backend startup fails fast with a clear error.
 For temporary local-only development, set `MONGODB_REQUIRE_ATLAS=false` in `.env`.

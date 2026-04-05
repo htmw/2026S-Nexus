@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-uri = os.getenv("MONGODB_URI", "")
+uri = (os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL") or "").strip()
+database_name = (os.getenv("MONGODB_DATABASE") or os.getenv("DATABASE_NAME") or "mind_mirror").strip()
+collection_name = "checkins"
+
 if not uri:
-    print("ERROR: MONGODB_URI not set in .env")
+    print("ERROR: MONGODB_URI (or MONGODB_URL) not set in .env")
     exit(1)
 
-# Mask password for display
 display_uri = uri
 if "@" in uri:
     parts = uri.split("@")
@@ -21,21 +23,28 @@ if "@" in uri:
 print(f"Testing: {display_uri}\n")
 
 try:
+    import certifi
     from pymongo import MongoClient
-    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
-    # Force connection
+
+    client_kwargs = {
+        "serverSelectionTimeoutMS": int(os.getenv("MONGODB_SERVER_SELECTION_TIMEOUT_MS", "5000")),
+    }
+    client_kwargs["tlsCAFile"] = certifi.where()
+
+    client = MongoClient(uri, **client_kwargs)
     client.admin.command("ping")
-    db = client["mind_mirror"]
-    coll = db["journals"]
+    db = client[database_name]
+    coll = db[collection_name]
     count = coll.count_documents({})
+
     print("SUCCESS: Connected to team MongoDB!")
-    print(f"Database: mind_mirror, Collection: journals")
+    print(f"Database: {database_name}, Collection: {collection_name}")
     print(f"Existing entries: {count}")
 except Exception as e:
     print(f"FAILED: {e}")
     print("\nTo fix:")
-    print("1. Go to https://cloud.mongodb.com → your project → Database Access")
-    print("2. Add user or edit existing: username + password (S@nket07)")
-    print("3. In .env set MONGODB_URI=mongodb+srv://USER:PASS@cluster0.abmnzeo.mongodb.net/mind_mirror?...")
-    print("   (URL-encode @ in password as %40)")
+    print("1. Copy .env.example to .env and set MONGODB_URI + MONGODB_DATABASE")
+    print("2. Ensure Atlas IP Access List allows your network")
+    print("3. Ensure Atlas username/password are correct")
+    print("4. If password has @, URL-encode it as %40")
     exit(1)
