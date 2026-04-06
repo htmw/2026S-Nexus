@@ -12,11 +12,11 @@ class Settings(BaseSettings):
 
     MONGODB_URL: str = Field(
         default="mongodb://localhost:27017",
-        validation_alias=AliasChoices("MONGODB_URL", "MONGODB_URI"),
+        validation_alias=AliasChoices("MONGODB_URI", "MONGODB_URL"),
     )
     DATABASE_NAME: str = Field(
         default="mind_mirror",
-        validation_alias=AliasChoices("DATABASE_NAME", "MONGODB_DATABASE"),
+        validation_alias=AliasChoices("MONGODB_DATABASE", "DATABASE_NAME"),
     )
     MONGODB_REQUIRE_ATLAS: bool = Field(
         default=True,
