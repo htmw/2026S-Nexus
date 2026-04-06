@@ -20,9 +20,9 @@ def _int_env(name: str, default: int) -> int:
 async def connect_to_mongo():
     global client, db
     client_kwargs = {
-        "serverSelectionTimeoutMS": _int_env("MONGODB_SERVER_SELECTION_TIMEOUT_MS", 1200),
-        "connectTimeoutMS": _int_env("MONGODB_CONNECT_TIMEOUT_MS", 1200),
-        "socketTimeoutMS": _int_env("MONGODB_SOCKET_TIMEOUT_MS", 2000),
+        "serverSelectionTimeoutMS": _int_env("MONGODB_SERVER_SELECTION_TIMEOUT_MS", 10000),
+        "connectTimeoutMS": _int_env("MONGODB_CONNECT_TIMEOUT_MS", 10000),
+        "socketTimeoutMS": _int_env("MONGODB_SOCKET_TIMEOUT_MS", 12000),
         "retryWrites": False,
     }
 
