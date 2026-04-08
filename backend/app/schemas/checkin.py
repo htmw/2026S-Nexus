@@ -26,17 +26,22 @@ class CheckinResponse(BaseModel):
     id: str
     mood: int
     reflection: Optional[str] = None
+    sentiment_score: Optional[float] = Field(
+        None, description="AI sentiment normalized to 0–5 scale"
+    )
+    sentiment_label: Optional[str] = Field(
+        None, description="POSITIVE or NEGATIVE"
+    )
+    sentiment_confidence: Optional[float] = Field(
+        None, description="Raw model confidence 0.0–1.0"
+    )
+    emotion_label: Optional[str] = Field(
+        None, description="Top emotion from reflection (e.g. joy, sadness)"
+    )
+    emotion_confidence: Optional[float] = Field(
+        None, description="Emotion model confidence 0.0–1.0"
+    )
+    suggestion: Optional[str] = Field(
+        None, description="Personalized suggestion based on normalized sentiment/mood"
+    )
     created_at: datetime
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "64b8f0c2e1a2b3c4d5e6f7g",
-                    "mood": 4,
-                    "reflection": "Had a productive day and enjoyed a walk outside.",
-                    "created_at": "2024-06-19T12:34:56Z"
-                }
-            ]
-        }
-    }
