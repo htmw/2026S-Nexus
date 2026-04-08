@@ -1,52 +1,62 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./JournalEntryCard.css";
 import { checkinAPI } from "../services/api";
-
 import { toast } from "react-hot-toast";
-
 
 const STORAGE_KEY = "mindmirror:draft";
 
 const MOODS = [
-  { key: "awful", label: "Awful", emoji: "😢"},
-  { key: "bad", label: "Bad", emoji: "🙁"},
-  { key: "meh", label: "Meh", emoji: "😐"},
-  { key: "good", label: "Good", emoji: "😄"},
-  { key: "great", label: "Great", emoji: "🤩"},
+  { key: "awful",  label: "Awful", emoji: "😢" },
+  { key: "bad",   label: "Bad",   emoji: "🙁" },
+  { key: "meh",   label: "Meh",   emoji: "😐" },
+  { key: "good",  label: "Good",  emoji: "😄" },
+  { key: "great", label: "Great", emoji: "🤩" },
 ];
 
-// function estimateMood(text, selectedMoodKey) {
-//   // If user explicitly chose a mood, use it.
-//   if (selectedMoodKey) {
-//     const found = MOODS.find((m) => m.key === selectedMoodKey);
-//     return found ? found.label : "Neutral";
-//   }
-//   //If not, return neutral
-//   return "Neutral";
-// }
-
 function estimateMood(text, selectedMoodKey) {
-  // If user explicitly chose a mood, use it.
   if (selectedMoodKey) {
     const idx = MOODS.findIndex((m) => m.key === selectedMoodKey);
-    if (idx !== -1) {
-      return { label: MOODS[idx].label, index: idx + 1 };
-    }
+    if (idx !== -1) return { label: MOODS[idx].label, index: idx + 1 };
   }
-  // If not, return neutral.
   return { label: "Neutral", index: 3 };
 }
 
+// ── Suggestion card shown after submission ───────────────────────────────────
+function SuggestionCard({ suggestion, onDismiss }) {
+  return (
+    <div className="mm-suggestion-overlay" role="dialog" aria-label="AI Suggestion">
+      <div className="mm-suggestion-card">
+        <div className="mm-suggestion-card__header">
+          <span className="mm-suggestion-card__icon" aria-hidden="true">✦</span>
+          <span className="mm-suggestion-card__label">Your personalised suggestion</span>
+          <button
+            className="mm-suggestion-card__close"
+            onClick={onDismiss}
+            aria-label="Dismiss suggestion"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="mm-suggestion-card__text">{suggestion}</p>
+        <button className="mm-suggestion-card__btn" onClick={onDismiss}>
+          Got it, thanks
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 export default function JournalEntryCard({
-  title = "How are you feeling today?",
-  subtitle = "Take a moment to reflect. No format needed — just write naturally.",
+  title       = "How are you feeling today?",
+  subtitle    = "Take a moment to reflect. No format needed — just write naturally.",
   placeholder = "What's on your mind today? How did your day go?",
-  maxChars = 2000,
-}) 
-{
-  const [text, setText] = useState("");
+  maxChars    = 2000,
+}) {
+  const [text, setText]                 = useState("");
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestion, setSuggestion]     = useState(null); // holds suggestion after submit
 
   const [draftState, setDraftState] = useState({
     loaded: false,
@@ -54,185 +64,154 @@ export default function JournalEntryCard({
     lastSavedAt: null,
   });
 
-  const onSubmitEntry = async (entry) => {
-    try {
-      await checkinAPI.create({
-        mood: entry.mood,
-        reflection: entry.text || null,
-      });
-      toast.success("Entry submitted successfully!");
-    } catch (error) {
-      console.error("Error submitting entry:", error);
-      toast.error("Failed to submit entry. Please try again.");
-    }
-  }
-
   // Load draft once
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed.text === "string") setText(parsed.text);
+        if (typeof parsed.text === "string")    setText(parsed.text);
         if (typeof parsed.moodKey === "string") setSelectedMoodKey(parsed.moodKey);
       }
-    } catch {
-      // ignore
-    } finally {
+    } catch { /* ignore */ } finally {
       setDraftState((s) => ({ ...s, loaded: true, isDirty: false }));
     }
   }, []);
 
-  // Auto-save draft (debounced-ish)
+  // Auto-save draft (debounced)
   useEffect(() => {
     if (!draftState.loaded) return;
-
     setDraftState((s) => ({ ...s, isDirty: true }));
-
     const id = setTimeout(() => {
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ text, moodKey: selectedMoodKey })
-        );
-        setDraftState((s) => ({
-          ...s,
-          isDirty: false,
-          lastSavedAt: Date.now(),
-        }));
-      } catch {
-        // ignore
-      }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, moodKey: selectedMoodKey }));
+        setDraftState((s) => ({ ...s, isDirty: false, lastSavedAt: Date.now() }));
+      } catch { /* ignore */ }
     }, 400);
-
     return () => clearTimeout(id);
   }, [text, selectedMoodKey, draftState.loaded]);
 
-  const estimatedMood = useMemo(
-    () => estimateMood(text, selectedMoodKey),
-    [text, selectedMoodKey]
-  );
-
-  const charCount = text.length;
-  const canSubmit = text.trim().length > 0;
+  const estimatedMood = useMemo(() => estimateMood(text, selectedMoodKey), [text, selectedMoodKey]);
+  const charCount  = text.length;
+  const canSubmit  = text.trim().length > 0;
 
   function handleClear() {
     setText("");
     setSelectedMoodKey(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     setDraftState((s) => ({ ...s, isDirty: false, lastSavedAt: null }));
   }
 
   async function handleSubmit() {
     if (!canSubmit || isSubmitting) return;
-
-    const payload = {
-      text: text.trim(),
-      mood: estimatedMood.index,
-    };
-
     setIsSubmitting(true);
+
     try {
-      await onSubmitEntry(payload);
+      const res = await checkinAPI.create({
+        mood:       estimatedMood.index,
+        reflection: text.trim() || null,
+      });
+
+      // The API returns the full checkin object including the suggestion
+      const returnedSuggestion = res?.data?.suggestion;
+
+      handleClear();
+
+      if (returnedSuggestion) {
+        // Show the inline suggestion card
+        setSuggestion(returnedSuggestion);
+      } else {
+        toast.success("Entry saved!");
+      }
+    } catch (err) {
+      console.error("Error submitting entry:", err);
+      toast.error("Failed to submit entry. Please try again.");
     } finally {
-      setTimeout(() => {
-        setIsSubmitting(false);
-        handleClear();
-      }, 600);
+      setIsSubmitting(false);
     }
   }
 
   return (
-    <section className="mm-entry">
-      <div className="mm-entry__inner">
-        <div className="mm-card">
-          <div className="mm-card__header">
-            <h2 className="mm-card__title">{title}</h2>
-            <p className="mm-card__subtitle">{subtitle}</p>
-          </div>
+    <>
+      {/* ── Suggestion overlay ── */}
+      {suggestion && (
+        <SuggestionCard
+          suggestion={suggestion}
+          onDismiss={() => setSuggestion(null)}
+        />
+      )}
 
-          <textarea
-            className="mm-textarea"
-            placeholder={placeholder}
-            value={text}
-            onChange={(e) => {
-              const next = e.target.value;
-              if (next.length <= maxChars) {
-                setText(next);
-              }
-            }}
-          />
-
-          <div className="mm-entry__footer">
-            {/* Emoji row + estimated mood */}
-            <div className="mm-entry__left">
-              <div className="mm-emojiRow" role="group" aria-label="Select mood">
-                {MOODS.map((m) => {
-                  const isActive = selectedMoodKey === m.key;
-                  return (
-                    <button
-                      key={m.key}
-                      type="button"
-                      className={`mm-emojiBtn ${isActive ? "is-active" : ""}`}
-                      onClick={() =>
-                        setSelectedMoodKey((cur) => (cur === m.key ? null : m.key))
-                      }
-                      aria-pressed={isActive}
-                      title={m.label}
-                    >
-                      <span className="mm-emojiBtn__emoji" aria-hidden="true">
-                        {m.emoji}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mm-estimated">
-                Estimated mood: <span className="mm-estimated__value">{estimatedMood.label}</span>
-              </div>
+      <section className="mm-entry">
+        <div className="mm-entry__inner">
+          <div className="mm-card">
+            <div className="mm-card__header">
+              <h2 className="mm-card__title">{title}</h2>
+              <p className="mm-card__subtitle">{subtitle}</p>
             </div>
 
-            {/* Draft status + char count + actions */}
-            <div className="mm-entry__right">
-              <div className="mm-metaRow">
-                <span className="mm-metaRow__spacer" aria-hidden="true" />
-                <span className="mm-draft">
+            <textarea
+              className="mm-textarea"
+              placeholder={placeholder}
+              value={text}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (next.length <= maxChars) setText(next);
+              }}
+            />
+
+            <div className="mm-entry__footer">
+              {/* Emoji row + estimated mood */}
+              <div className="mm-entry__left">
+                <div className="mm-emojiRow" role="group" aria-label="Select mood">
+                  {MOODS.map((m) => {
+                    const isActive = selectedMoodKey === m.key;
+                    return (
+                      <button
+                        key={m.key}
+                        type="button"
+                        className={`mm-emojiBtn ${isActive ? "is-active" : ""}`}
+                        onClick={() => setSelectedMoodKey((cur) => (cur === m.key ? null : m.key))}
+                        aria-pressed={isActive}
+                        title={m.label}
+                      >
+                        <span className="mm-emojiBtn__emoji" aria-hidden="true">{m.emoji}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mm-estimated">
+                  Estimated mood: <span className="mm-estimated__value">{estimatedMood.label}</span>
+                </div>
+              </div>
+
+              {/* Draft status + char count + actions */}
+              <div className="mm-entry__right">
+                <div className="mm-metaRow">
+                  <span className="mm-metaRow__spacer" aria-hidden="true" />
+                  <span className="mm-draft">
                     {draftState.lastSavedAt
-                    ? draftState.isDirty
-                        ? "Saving…"
-                        : "Draft saved"
-                    : "Draft not saved yet"}
-                </span>
-                <span className="mm-chars">
-                  {charCount} / {maxChars} characters
-                </span>
+                      ? draftState.isDirty ? "Saving…" : "Draft saved"
+                      : "Draft not saved yet"}
+                  </span>
+                  <span className="mm-chars">{charCount} / {maxChars} characters</span>
                 </div>
 
-              <div className="mm-actionsRow">
-                <button type="button" className="mm-clear" onClick={handleClear}>
-                  Clear draft
-                </button>
-                
+                <div className="mm-actionsRow">
+                  <button type="button" className="mm-clear" onClick={handleClear}>
+                    Clear draft
+                  </button>
 
-                <button
-                  type="button"
-                  className={`mm-submit ${canSubmit ? "" : "is-disabled"} ${isSubmitting ? "is-loading" : ""}`}
-                  onClick={handleSubmit}
-                  disabled={!canSubmit || isSubmitting}
-                  aria-label={isSubmitting ? "Submitting entry…" : "Submit Entry"}
-                >
-                  <span className="mm-submit__content">
-                    {/* Default label */}
-                    <span className="mm-submit__label">Submit Entry</span>
-
-                    {/* Unified journal+pen SVG — pen tip tracks along each line */}
-                    <span className="mm-submit__morph" aria-hidden="true">
-                      <svg className="mm-submit__writing" viewBox="-2 -1 36 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <button
+                    type="button"
+                    className={`mm-submit ${canSubmit ? "" : "is-disabled"} ${isSubmitting ? "is-loading" : ""}`}
+                    onClick={handleSubmit}
+                    disabled={!canSubmit || isSubmitting}
+                    aria-label={isSubmitting ? "Submitting entry…" : "Submit Entry"}
+                  >
+                    <span className="mm-submit__content">
+                      <span className="mm-submit__label">Submit Entry</span>
+                      <span className="mm-submit__morph" aria-hidden="true">
+                        <svg className="mm-submit__writing" viewBox="-2 -1 36 38" fill="none" xmlns="http://www.w3.org/2000/svg">
                         {/* Journal body */}
                         <rect x="1" y="1" width="26" height="34" rx="3" fill="white" fillOpacity="0.15" stroke="white" strokeWidth="1.5"/>
                         {/* Spine */}
@@ -268,15 +247,15 @@ export default function JournalEntryCard({
                           <circle cx="0" cy="0" r="1" fill="white" fillOpacity="0.95"/>
                         </g>
                       </svg>
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
               </div>
-
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
