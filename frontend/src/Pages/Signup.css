@@ -223,3 +223,55 @@
     line-height: 1.5;
   }
 }
+
+.signup-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+ 
+.signup-banner--error {
+  background-color: #fff5f5;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+ 
+.signup-banner--error svg {
+  flex-shrink: 0;
+  color: #c53030;
+}
+ 
+/* Password strength bar */
+.signup-strength {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+}
+ 
+.signup-strength__bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+ 
+.signup-strength__segment {
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background-color: #e2e8f0;   /* default unfilled colour */
+  transition: background-color 0.25s ease, opacity 0.25s ease;
+}
+ 
+.signup-strength__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+  transition: color 0.25s ease;
+}

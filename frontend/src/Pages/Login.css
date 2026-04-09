@@ -198,7 +198,7 @@ min-height: calc(100vh - 67px);
 }
 
 .login-footer__text {
-  margin-top: auto;
+  margin: 0;
   font-family: "Playfair Display", serif;
   font-size: 16px;
   color: #6f6f6f;
@@ -301,7 +301,29 @@ min-height: calc(100vh - 67px);
   }
 
   .login-footer__text {
-    font-size: 18px;
+    font-size: 15px;
     line-height: 1.5;
   }
+}
+
+.login-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+ 
+.login-banner--error {
+  background-color: #fff5f5;   /* light red tint — adjust to match your theme */
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+ 
+.login-banner--error svg {
+  flex-shrink: 0;
+  color: #c53030;
 }
