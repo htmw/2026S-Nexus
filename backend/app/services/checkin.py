@@ -9,6 +9,7 @@ from app.services.suggestions import get_suggestion_for_checkin_async
 logger = logging.getLogger(__name__)
 
 async def create_checkin(
+        user_id: str,
         mood: int, 
         reflection: Optional[str] = None
 ) -> dict:
@@ -59,6 +60,7 @@ async def create_checkin(
     )
 
     doc = {
+        "user_id": user_id,
         "mood": mood,
         "reflection": reflection,
         "sentiment_score": sentiment_score,

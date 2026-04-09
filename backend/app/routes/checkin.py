@@ -4,6 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 
 from app.schemas.checkin import CheckinRequest, CheckinResponse
+from app.services.auth import get_current_user_id
 from app.services.checkin import create_checkin
 
 logger = logging.getLogger(__name__)
@@ -18,14 +19,17 @@ router = APIRouter(tags=["checkin"])
 )
 async def submit_checkin(
     checkin: CheckinRequest,
+    user_id: str = Depends(get_current_user_id)
 ):
     doc = await create_checkin(
+        user_id = user_id,
         mood=checkin.mood,
         reflection=checkin.reflection,
     )
 
     return CheckinResponse(
         id=doc["_id"],
+        user_id = doc[user_id],
         mood=doc["mood"],
         reflection=doc["reflection"],
         sentiment_score=doc["sentiment_score"],

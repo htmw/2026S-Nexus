@@ -24,6 +24,7 @@ class CheckinRequest(BaseModel):
 
 class CheckinResponse(BaseModel):
     id: str
+    user_id: str
     mood: int
     reflection: Optional[str] = None
     sentiment_score: Optional[float] = Field(
