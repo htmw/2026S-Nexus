@@ -1,7 +1,7 @@
 import React from "react";
 import "./Navbar.css";
 import logo from "../assets/logo3.png";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function Navbar({
   username = "User",
@@ -9,6 +9,12 @@ export default function Navbar({
   onLogout = () => {},
   variant = "full",
 }) {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    onLogout();           
+    navigate("/login");
+  };
+
   const tabs = [
     { label: "Journal", to: "/journal" },
     { label: "Insights", to: "/insights" },
@@ -63,7 +69,7 @@ export default function Navbar({
               </svg>
             </button>
 
-            <button className="mm-logout" onClick={onLogout} type="button">
+            <button className="mm-logout" onClick={handleLogout} type="button">
               Logout
             </button>
           </div>
