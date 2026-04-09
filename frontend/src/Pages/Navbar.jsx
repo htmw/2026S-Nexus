@@ -2,18 +2,18 @@ import React from "react";
 import "./Navbar.css";
 import logo from "../assets/logo3.png";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/Authcontext"
 
 export default function Navbar({
-  username = "User",
   onToggleTheme = () => {},
-  onLogout = () => {},
   variant = "full",
 }) {
+  const { user, logout} = useAuth();
   const navigate = useNavigate();
-  const handleLogout = () => {
-    onLogout();           
-    navigate("/login");
-  };
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
 
   const tabs = [
     { label: "Journal", to: "/journal" },
@@ -51,7 +51,7 @@ export default function Navbar({
         {/* Right */}
         {variant === "full" && (
           <div className="mm-actions">
-            <div className="mm-userpill">{username}</div>
+            <div className="mm-userpill">{user?.name ?? "User"}</div>
 
             <button
               className="mm-iconbtn"

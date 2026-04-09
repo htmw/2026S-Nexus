@@ -1,5 +1,6 @@
 import React from "react";
 import "./GreetingBar.css";
+import { useAuth } from "../context/Authcontext";
 
 function StatChip({ left, rightLabel }) {
   return (
@@ -11,19 +12,19 @@ function StatChip({ left, rightLabel }) {
 }
 
 export default function GreetingBar({
-  name = "vanie",
   moodLabel = "Balanced / neutral",
   dayStreak = 0,
   entries = 0,
   stabilityLabel = "Very stable",
   consistencyLabel = "0-day streak",
 }) {
+  const {user} = useAuth();
   return (
     <section className="mm-greet">
       <div className="mm-greet__inner">
         {/* Top row */}
         <div className="mm-greet__top">
-          <h1 className="mm-greet__title">Good afternoon, {name}</h1>
+          <h1 className="mm-greet__title">Good afternoon, {user?.name ?? "User"}</h1>
 
           <div className="mm-moodPill">
             <span className="mm-moodPill__prefix">Today&apos;s mood:</span>
