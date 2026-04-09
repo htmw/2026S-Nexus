@@ -59,6 +59,7 @@ export default function JournalEntryCard({
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [submissionError, setSubmissionError] = useState("");
 
   const [draftState, setDraftState] = useState({
     loaded: false,
@@ -67,18 +68,12 @@ export default function JournalEntryCard({
   });
 
   const onSubmitEntry = async (entry) => {
-    try {
-      const response = await checkinAPI.create({
-        mood: entry.mood,
-        reflection: entry.text || null,
-      });
-      setSubmissionResult(response.data);
-      toast.success("Entry submitted successfully!");
-    } catch (error) {
-      console.error("Error submitting entry:", error);
-      toast.error("Failed to submit entry. Please try again.");
-    }
-  }
+    const response = await checkinAPI.create({
+      mood: entry.mood,
+      reflection: entry.text || null,
+    });
+    return response.data;
+  };
 
   // Load draft once
   useEffect(() => {
@@ -149,12 +144,19 @@ export default function JournalEntryCard({
     };
 
     setIsSubmitting(true);
+    setSubmissionError("");
+    setSubmissionResult(null);
     try {
-      await onSubmitEntry(payload);
+      const result = await onSubmitEntry(payload);
+      setSubmissionResult(result);
+      toast.success("Entry submitted successfully!");
+      handleClear();
+    } catch (error) {
+      console.error("Error submitting entry:", error);
+      setSubmissionError(error.message || "Failed to submit entry. Please try again.");
     } finally {
       setTimeout(() => {
         setIsSubmitting(false);
-        handleClear();
       }, 600);
     }
   }
@@ -288,6 +290,12 @@ export default function JournalEntryCard({
 
             </div>
           </div>
+
+          {submissionError ? (
+            <div className="mm-inlineError" role="alert">
+              {submissionError}
+            </div>
+          ) : null}
 
           {submissionResult ? (
             <div className="mm-feedback">

@@ -1,16 +1,20 @@
 import os
 import unittest
-import importlib
-from unittest.mock import patch
+from contextlib import ExitStack
+from unittest.mock import AsyncMock, patch
 
-from app.main import app
+from fastapi.routing import APIRoute
+from fastapi.testclient import TestClient
+
 import app.main as main_module
-import app.sentiment_service as sentiment_service
+import app.services.checkin as checkin_service
+import app.services.sentiment_service as sentiment_service
+from app.main import app
 
 
 class TestSentimentFallback(unittest.TestCase):
     def test_local_success_uses_local_result(self):
-        with patch("app.sentiment_service._analyze_local", return_value=("POSITIVE", 0.9)):
+        with patch("app.services.sentiment_service._analyze_local", return_value=("POSITIVE", 0.9)):
             with patch.dict(
                 os.environ,
                 {
@@ -25,8 +29,8 @@ class TestSentimentFallback(unittest.TestCase):
         self.assertAlmostEqual(score, 0.9)
 
     def test_local_failure_falls_back_to_remote(self):
-        with patch("app.sentiment_service._analyze_local", side_effect=RuntimeError("local failed")):
-            with patch("app.sentiment_service._analyze_remote", return_value=("NEGATIVE", 0.8)):
+        with patch("app.services.sentiment_service._analyze_local", side_effect=RuntimeError("local failed")):
+            with patch("app.services.sentiment_service._analyze_remote", return_value=("NEGATIVE", 0.8)):
                 with patch.dict(
                     os.environ,
                     {
@@ -41,8 +45,8 @@ class TestSentimentFallback(unittest.TestCase):
         self.assertAlmostEqual(score, 0.8)
 
     def test_both_fail_returns_neutral(self):
-        with patch("app.sentiment_service._analyze_local", side_effect=RuntimeError("local failed")):
-            with patch("app.sentiment_service._analyze_remote", side_effect=RuntimeError("remote failed")):
+        with patch("app.services.sentiment_service._analyze_local", side_effect=RuntimeError("local failed")):
+            with patch("app.services.sentiment_service._analyze_remote", side_effect=RuntimeError("remote failed")):
                 with patch.dict(
                     os.environ,
                     {
@@ -57,32 +61,75 @@ class TestSentimentFallback(unittest.TestCase):
         self.assertAlmostEqual(score, 0.0)
 
 
-class TestApiModelIntegration(unittest.TestCase):
+class TestApiErrorHandling(unittest.TestCase):
     def setUp(self):
-        testclient = importlib.import_module("fastapi.testclient")
-        self.client = testclient.TestClient(app)
-        main_module._memory_store.clear()
+        checkin_service._memory_store.clear()
 
-    def test_checkin_uses_model_output_and_summary_aggregates(self):
-        with patch("app.main.analyze_sentiment", return_value=("POSITIVE", 0.77)):
-            with patch("app.main.get_suggestion", return_value="Keep it up"):
-                with patch("app.main.get_journals_collection", side_effect=RuntimeError("db down")):
-                    response = self.client.post(
-                        "/api/checkin",
-                        json={"mood": 4, "reflection": "Had a nice day"},
-                    )
+    def _client(self, *, raise_server_exceptions=True):
+        stack = ExitStack()
+        stack.enter_context(patch.object(main_module.settings, "MONGODB_REQUIRE_ATLAS", False))
+        stack.enter_context(patch("app.main.connect_to_mongo", new=AsyncMock()))
+        stack.enter_context(patch("app.main.close_mongo_connection", new=AsyncMock()))
+        stack.enter_context(patch("app.main.get_db", return_value=None))
+        stack.enter_context(patch("app.services.checkin.get_db", return_value=None))
+        stack.enter_context(patch("app.services.checkin._append_fallback_entry", return_value=None))
+        stack.enter_context(patch("app.services.checkin._read_fallback_entries", return_value=[]))
+        stack.enter_context(
+            patch.dict(
+                os.environ,
+                {"SENTIMENT_PRELOAD_ON_STARTUP": "false"},
+                clear=False,
+            )
+        )
+        self.addCleanup(stack.close)
+        return TestClient(app, raise_server_exceptions=raise_server_exceptions)
 
-                    summary_response = self.client.get("/api/sentiment-summary")
+    def test_checkin_survives_sentiment_failure(self):
+        with self._client() as client:
+            with patch("app.services.checkin.analyze_sentiment", side_effect=RuntimeError("ml unavailable")):
+                response = client.post(
+                    "/api/checkin",
+                    json={"mood": 4, "reflection": "Had a rough afternoon"},
+                )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         body = response.json()
-        self.assertEqual(body["sentiment"], "POSITIVE")
-        self.assertAlmostEqual(body["confidence"], 0.77)
+        self.assertEqual(body["sentiment"], "NEUTRAL")
+        self.assertEqual(body["confidence"], 0.0)
+        self.assertTrue(body["suggestion"])
 
-        self.assertEqual(summary_response.status_code, 200)
-        summary_body = summary_response.json()
-        self.assertEqual(summary_body["total_entries"], 1)
-        self.assertEqual(summary_body["counts"], [{"sentiment": "POSITIVE", "count": 1}])
+    def test_checkin_survives_suggestion_failure(self):
+        with self._client() as client:
+            with patch("app.services.checkin.get_suggestion", side_effect=RuntimeError("suggestion unavailable")):
+                response = client.post(
+                    "/api/checkin",
+                    json={"mood": 3, "reflection": "Doing okay today"},
+                )
+
+        self.assertEqual(response.status_code, 201)
+        body = response.json()
+        self.assertEqual(
+            body["suggestion"],
+            "Your reflection was saved. Insights are temporarily unavailable right now.",
+        )
+
+    def test_global_error_handler_returns_consistent_payload(self):
+        async def raise_unhandled_error():
+            raise RuntimeError("boom")
+
+        route = APIRoute("/api/__test/error", raise_unhandled_error, methods=["GET"])
+        app.router.routes.append(route)
+        self.addCleanup(lambda: app.router.routes.remove(route))
+
+        with self._client(raise_server_exceptions=False) as client:
+            response = client.get("/api/__test/error")
+
+        self.assertEqual(response.status_code, 500)
+        body = response.json()
+        self.assertEqual(body["error"]["code"], "internal_server_error")
+        self.assertEqual(body["error"]["message"], "Something went wrong. Please try again.")
+        self.assertTrue(body["error"]["request_id"])
+        self.assertEqual(response.headers["X-Request-ID"], body["error"]["request_id"])
 
 
 if __name__ == "__main__":

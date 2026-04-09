@@ -102,14 +102,30 @@ def _predict_mood_score(sentiment: str, confidence: float) -> float:
 def _normalize_confidence(confidence: float) -> float:
     return round(max(0.0, min(1.0, float(confidence))), 4)
 
+
+def _build_sentiment_feedback(reflection_text: str, mood: int) -> tuple[str, float, str]:
+    try:
+        sentiment, confidence = analyze_sentiment(reflection_text)
+    except Exception:
+        logger.exception("Sentiment analysis failed during check-in")
+        sentiment, confidence = "NEUTRAL", 0.0
+
+    confidence = _normalize_confidence(confidence)
+
+    try:
+        suggestion = get_suggestion(reflection_text, sentiment, mood)
+    except Exception:
+        logger.exception("Suggestion generation failed during check-in")
+        suggestion = "Your reflection was saved. Insights are temporarily unavailable right now."
+
+    return sentiment, confidence, suggestion
+
 async def create_checkin(
         mood: int, 
         reflection: Optional[str] = None
 ) -> dict:
     reflection_text = (reflection or "").strip()
-    sentiment, confidence = analyze_sentiment(reflection_text)
-    confidence = _normalize_confidence(confidence)
-    suggestion = get_suggestion(reflection_text, sentiment, mood)
+    sentiment, confidence, suggestion = _build_sentiment_feedback(reflection_text, mood)
     predicted_mood = _predict_mood_score(sentiment, confidence)
 
     db = get_db()
@@ -205,4 +221,3 @@ async def get_past_entries(limit: int = 200) -> list[dict]:
         }
         for item in fallback
     ]
-

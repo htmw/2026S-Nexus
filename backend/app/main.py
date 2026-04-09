@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection, get_db
+from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.routes.checkin import router as checkin_router
 from app.services.sentiment_service import warmup_sentiment_model
 
@@ -65,6 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+app.add_middleware(ErrorHandlerMiddleware)
 
 app.include_router(checkin_router, prefix="/api")
 

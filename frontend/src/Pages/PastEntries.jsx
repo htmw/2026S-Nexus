@@ -107,7 +107,7 @@ export default function PastEntries() {
         }
       } catch (error) {
         if (!isMounted) return;
-        setErrorMessage("Could not load saved entries right now.");
+        setErrorMessage(error.message || "Could not load saved entries right now.");
         setEntries([]);
       } finally {
         if (isMounted) {

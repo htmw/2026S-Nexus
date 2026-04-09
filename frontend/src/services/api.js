@@ -1,8 +1,14 @@
 import axios from "axios";
+import { installApiErrorInterceptor } from "./apiErrors.js";
+
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: apiBaseUrl,
 });
+
+installApiErrorInterceptor(api);
 
 export const checkinAPI = {
   create: (data) => api.post("/checkin", data),

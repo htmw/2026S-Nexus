@@ -18,6 +18,17 @@
   box-sizing: border-box;
 }
 
+.mm-inlineError {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(176, 99, 75, 0.08);
+  border: 1px solid rgba(176, 99, 75, 0.16);
+  color: #8d543f;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 .mm-feedback {
   margin-top: 22px;
   padding: 20px;
