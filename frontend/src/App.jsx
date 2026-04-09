@@ -6,6 +6,7 @@ import Journal from "./Pages/Journal";
 import Insights from "./Pages/Insights";
 import PastEntries from "./Pages/PastEntries";
 import Login from "./Pages/Login";
+import Signup from "./Pages/Signup";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/past-entries" element={<PastEntries />} />
