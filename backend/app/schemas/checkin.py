@@ -46,3 +46,41 @@ class CheckinResponse(BaseModel):
         None, description="Personalized suggestion based on normalized sentiment/mood"
     )
     created_at: datetime
+
+class ChartDataset(BaseModel):
+    """Single dataset for Chart.js (e.g. one line). Use null for missing points."""
+    label: str
+    data: list[Optional[float]]
+
+
+class ChartData(BaseModel):
+    """Chart.js-ready structure: labels (e.g. dates) + datasets."""
+    labels: list[str]
+    datasets: list[ChartDataset]
+
+class InsightResponse(BaseModel):
+    checkins: list[CheckinResponse]
+    mood_average_7d: Optional[float] = Field(
+        None, description="7-day rolling average mood (last 7 days)"
+    )
+    sentiment_average_7d: Optional[float] = Field(
+        None, description="7-day rolling average sentiment (last 7 days)"
+    )
+    mood_consistency_score: Optional[float] = Field(
+        None,
+        description="0–100; higher means more consistent mood over the last 7 days",
+    )
+    weekly_summary: Optional[str] = Field(
+        None, description="Short text summary of the past week"
+    )
+    mood_trend: Optional[ChartData] = Field(
+        None, description="Mood over time, ready for Chart.js"
+    )
+    sentiment_trend: Optional[ChartData] = Field(
+        None, description="Sentiment over time, ready for Chart.js"
+    )
+    rolling_average_7d: Optional[ChartData] = Field(
+        None,
+        description="7-day rolling averages over time, ready for Chart.js",
+    )
+    suggestion: str

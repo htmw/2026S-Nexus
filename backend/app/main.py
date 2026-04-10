@@ -8,6 +8,7 @@ from app.database import connect_to_mongo, close_mongo_connection
 from app.services.nlp import load_models
 from app.routes.auth import router as auth_router
 from app.routes.checkin import router as checkin_router
+from app.routes.insight import router as insight_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(checkin_router, prefix="/api")
+app.include_router(insight_router, prefix="/api")
 
 @app.get("/")
 async def root():
