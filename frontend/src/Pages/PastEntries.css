@@ -25,19 +25,19 @@
 /* Card base */
 .pe-card {
   border-radius: 18px;
-  background: #fbf4ee; /* clay */
+  background: #fbf4ee;
   border: 1px solid rgba(0, 0, 0, 0.10);
   box-sizing: border-box;
 }
 
-/* LEFT column */
+/* ── LEFT column ─────────────────────────────────────────────── */
 .pe-left {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* Calendar card */
+/* Calendar */
 .pe-calendarCard {
   padding: 14px 14px 16px;
   background: rgba(255, 255, 255, 0.55);
@@ -69,9 +69,7 @@
   color: #6f7a80;
 }
 
-.pe-calNav:hover {
-  filter: brightness(0.98);
-}
+.pe-calNav:hover { filter: brightness(0.98); }
 
 .pe-dow {
   display: grid;
@@ -87,7 +85,6 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* days grid */
 .pe-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -112,9 +109,7 @@
   box-shadow: 0 0 0 3px rgba(108, 143, 198, 0.10);
 }
 
-.pe-day.is-out {
-  opacity: 0.35;
-}
+.pe-day.is-out     { opacity: 0.35; }
 
 .pe-day.is-selected {
   border-color: rgba(108, 143, 198, 0.55);
@@ -139,7 +134,7 @@
   opacity: 0.9;
 }
 
-/* List card */
+/* Entry list */
 .pe-listCard {
   background: rgba(255, 255, 255, 0.55);
   padding: 14px;
@@ -181,6 +176,7 @@
   border-radius: 14px;
   padding: 12px 12px;
   cursor: pointer;
+  width: 100%;
 }
 
 .pe-entryRow:hover {
@@ -211,6 +207,16 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* Hint that a suggestion exists */
+.pe-entryRow__suggestionHint {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6c8fc6;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  letter-spacing: 0.2px;
+}
+
 .pe-emptyList {
   padding: 18px 8px;
   color: rgba(47, 47, 47, 0.55);
@@ -218,9 +224,9 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* RIGHT side */
+/* ── RIGHT column — detail card ──────────────────────────────── */
 .pe-right .pe-detailCard {
-  padding: 18px;
+  padding: 22px 22px 28px;
   background: rgba(255, 255, 255, 0.40);
   min-height: 560px;
 }
@@ -229,6 +235,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .pe-detailDate {
@@ -236,48 +245,109 @@
   font-size: 15px;
   font-weight: 700;
   color: #6C8FC6;
+}
 
+/* Mood badge with dynamic colour via CSS var */
+.pe-detailMoodBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  letter-spacing: 0.3px;
+  color: var(--mood-color, #6c8fc6);
+  background: color-mix(in srgb, var(--mood-color, #6c8fc6) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mood-color, #6c8fc6) 25%, transparent);
 }
 
 .pe-detailBody {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .pe-detailMeta {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 13px;
-  color: rgba(47, 47, 47, 0.65);
-  font-weight: 700;
+  font-size: 12px;
+  color: rgba(47, 47, 47, 0.50);
+  font-weight: 600;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  margin-bottom: 16px;
+}
+
+/* Sections (reflection + suggestion) */
+.pe-section {
+  margin-bottom: 20px;
+}
+
+.pe-section__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(47, 47, 47, 0.45);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   margin-bottom: 10px;
-  margin-top: -5px;
 }
 
-.pe-detailTitle {
-  margin: 0 0 12px;
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: #2f2f2f;
+.pe-section__label--suggestion {
+  color: #6c8fc6;
 }
 
+.pe-suggestion-star {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Reflection paper block */
 .pe-paper {
   border-radius: 14px;
   background: rgba(251, 244, 238, 0.85);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 16px;
+  padding: 18px 20px;
   position: relative;
 }
 
 .pe-detailText {
   margin: 0;
   white-space: pre-wrap;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #2f2f2f;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.pe-noContent {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(47, 47, 47, 0.40);
+  font-style: italic;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* AI Suggestion box */
+.pe-suggestionBox {
+  border-radius: 14px;
+  background: linear-gradient(135deg,
+    rgba(108, 143, 198, 0.08) 0%,
+    rgba(122, 121, 201, 0.06) 100%
+  );
+  border: 1px solid rgba(108, 143, 198, 0.22);
+  padding: 18px 20px;
+  position: relative;
+}
+
+.pe-suggestionText {
+  margin: 0;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
   font-size: 16px;
   line-height: 1.7;
   color: #2f2f2f;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .pe-detailEmpty {

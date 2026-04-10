@@ -23,6 +23,7 @@ export const authAPI = {
 };
 export const checkinAPI = {
   create: (data) => api.post("/checkin", data),
+  getAll: () => api.get("/checkins"),
 };
 
 export default api;

@@ -1,51 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./PastEntries.css";
-
-/**
- * MOCK DATA (replace later with your real entries)
- * Each entry has: id, date (YYYY-MM-DD), timeLabel, moodLabel, title, text
- */
-const MOCK_ENTRIES = [
-  {
-    id: "e1",
-    date: "2026-03-01",
-    timeLabel: "9:12 PM",
-    moodLabel: "Balanced",
-    title: "Long day, calmer ending",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e2",
-    date: "2026-03-01",
-    timeLabel: "11:08 PM",
-    moodLabel: "Reflective",
-    title: "Thinking about priorities",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e3",
-    date: "2026-03-02",
-    timeLabel: "7:40 AM",
-    moodLabel: "Anxious",
-    title: "Woke up tense",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-  {
-    id: "e4",
-    date: "2026-03-01",
-    timeLabel: "6:15 PM",
-    moodLabel: "Happy",
-    title: "Good news!",
-    text:
-      "Today I felt unusually calm.🥰 \n\nMaybe it’s because I finally gave myself permission to slow down instead of rushing to check every box on my to-do list. I took a walk without my phone and realized how rarely I let my mind wander freely. There’s something refreshing about not needing to be productive every second — just existing felt enough. \n \nLater in the evening, I reflected on how I tend to measure my worth by what I accomplish. It’s exhausting, honestly. I want to start celebrating smaller moments — like taking care of myself, choosing peace, or saying no when I need to. I think that’s what balance might actually look like for me. \n \nAlso, work has been a rollercoaster lately. Some days I feel like I’m thriving — creative, focused, and full of ideas. But other days, the imposter syndrome creeps in. I catch myself second-guessing my decisions or comparing my progress to others’. I’m trying to remind myself that growth isn’t linear and that confidence is built through consistency, not perfection.",
-  },
-];
+import { checkinAPI } from "../services/api";
 
 function formatLongDate(iso) {
-  // iso = "YYYY-MM-DD"
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString(undefined, {
@@ -57,8 +14,8 @@ function formatLongDate(iso) {
 }
 
 function toISODate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
@@ -68,15 +25,11 @@ function sameMonth(a, b) {
 }
 
 function getMonthGrid(viewDate) {
-  // returns array of 42 day-cells (6 rows x 7 cols)
-  const year = viewDate.getFullYear();
+  const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
-
   const first = new Date(year, month, 1);
-  const startDay = first.getDay(); // 0=Sun
-
+  const startDay  = first.getDay();
   const gridStart = new Date(year, month, 1 - startDay);
-
   const cells = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(gridStart);
@@ -86,50 +39,192 @@ function getMonthGrid(viewDate) {
   return cells;
 }
 
+function moodLabelFromNumber(mood) {
+  const map = { 0: "Awful", 1: "Awful", 2: "Bad", 3: "Meh", 4: "Good", 5: "Great" };
+  return map[mood] ?? "Unknown";
+}
+
+function moodColorFromLabel(label) {
+  const map = {
+    Awful: "#e07b7b",
+    Bad:   "#d4956a",
+    Meh:   "#b0a96a",
+    Good:  "#6aab84",
+    Great: "#6c8fc6",
+  };
+  return map[label] ?? "#9ba8b0";
+}
+
+function titleFromReflection(reflection) {
+  if (!reflection || !reflection.trim()) return "No reflection";
+  const firstLine = reflection.split("\n").find((l) => l.trim())?.trim() ?? "No reflection";
+  return firstLine.length > 60 ? `${firstLine.slice(0, 60)}…` : firstLine;
+}
+
+function mapCheckinToEntry(checkin, index) {
+  const created   = new Date(checkin.created_at);
+  const validDate = Number.isNaN(created.getTime()) ? new Date() : created;
+
+  return {
+    id:          checkin.id ?? `entry-${index}`,
+    date:        toISODate(validDate),
+    timeLabel:   validDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+    moodLabel:   moodLabelFromNumber(checkin.mood),
+    title:       titleFromReflection(checkin.reflection),
+    text:        checkin.reflection?.trim() || "",
+    suggestion:  checkin.suggestion?.trim() || "",
+    createdAtMs: validDate.getTime(),
+  };
+}
+
+// ── Detail panel ─────────────────────────────────────────────────────────────
+function EntryDetail({ entry, date }) {
+  if (!entry) {
+    return (
+      <div className="pe-card pe-detailCard">
+        <div className="pe-detailHeader">
+          <div className="pe-detailDate">{formatLongDate(date)}</div>
+        </div>
+        <div className="pe-detailEmpty">No entry selected.</div>
+      </div>
+    );
+  }
+
+  const moodColor = moodColorFromLabel(entry.moodLabel);
+
+  return (
+    <div className="pe-card pe-detailCard">
+      {/* Header */}
+      <div className="pe-detailHeader">
+        <div className="pe-detailDate">{formatLongDate(entry.date)}</div>
+        <span className="pe-detailMoodBadge" style={{ "--mood-color": moodColor }}>
+          {entry.moodLabel}
+        </span>
+      </div>
+
+      <article className="pe-detailBody">
+        {/* <div className="pe-detailMeta">
+          <span className="pe-detailTime">{entry.timeLabel}</span>
+        </div> */}
+
+        {/* Reflection */}
+        {entry.text ? (
+          <div className="pe-section">
+            <div className="pe-section__label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Reflection
+            </div>
+            <div className="pe-paper">
+              <p className="pe-detailText">{entry.text}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="pe-section">
+            <div className="pe-section__label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Reflection
+            </div>
+            <p className="pe-noContent">No reflection written for this entry.</p>
+          </div>
+        )}
+
+        {/* AI Suggestion */}
+        {entry.suggestion ? (
+          <div className="pe-section pe-section--suggestion">
+            <div className="pe-section__label pe-section__label--suggestion">
+              <span className="pe-suggestion-star" aria-hidden="true">✦</span>
+              AI Suggestion
+            </div>
+            <div className="pe-suggestionBox">
+              <p className="pe-suggestionText">{entry.suggestion}</p>
+            </div>
+          </div>
+        ) : null}
+      </article>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function PastEntries() {
-  const [viewDate, setViewDate] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(() => toISODate(new Date()));
+  const [viewDate,       setViewDate]       = useState(() => new Date());
+  const [selectedDate,   setSelectedDate]   = useState(() => toISODate(new Date()));
   const [selectedEntryId, setSelectedEntryId] = useState(null);
+
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchEntries() {
+      setLoading(true);
+      setError("");
+      try {
+        const res      = await checkinAPI.getAll();
+        const checkins = Array.isArray(res.data) ? res.data : [];
+        const mapped   = checkins
+          .map(mapCheckinToEntry)
+          .sort((a, b) => b.createdAtMs - a.createdAtMs);
+
+        if (!active) return;
+        setEntries(mapped);
+
+        if (mapped.length > 0) {
+          setSelectedDate(mapped[0].date);
+          setSelectedEntryId(mapped[0].id);
+        } else {
+          setSelectedEntryId(null);
+        }
+      } catch (err) {
+        if (!active) return;
+        setError(err.response?.data?.detail || "Failed to load past entries.");
+        setEntries([]);
+        setSelectedEntryId(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    fetchEntries();
+    return () => { active = false; };
+  }, []);
 
   const entriesByDate = useMemo(() => {
     const map = new Map();
-    for (const e of MOCK_ENTRIES) {
+    for (const e of entries) {
       if (!map.has(e.date)) map.set(e.date, []);
       map.get(e.date).push(e);
     }
-    //sort entries within each day by timeLabel (simple)
     for (const [k, arr] of map.entries()) {
-      arr.sort((a, b) => (a.timeLabel > b.timeLabel ? 1 : -1));
+      arr.sort((a, b) => b.createdAtMs - a.createdAtMs);
       map.set(k, arr);
     }
     return map;
-  }, []);
+  }, [entries]);
 
-  const selectedDayEntries = useMemo(() => {
-    return entriesByDate.get(selectedDate) ?? [];
-  }, [entriesByDate, selectedDate]);
+  const allEntries        = useMemo(() => entries, [entries]);
+  const selectedDayEntries = useMemo(() => entriesByDate.get(selectedDate) ?? [], [entriesByDate, selectedDate]);
+  const selectedEntry      = useMemo(
+    () => allEntries.find((e) => e.id === selectedEntryId) || allEntries[0] || null,
+    [allEntries, selectedEntryId]
+  );
 
-  const selectedEntry = useMemo(() => {
-    const all = MOCK_ENTRIES;
-    const found =
-      all.find((e) => e.id === selectedEntryId) ||
-      (selectedDayEntries.length ? selectedDayEntries[0] : null);
-    return found;
-  }, [selectedEntryId, selectedDayEntries]);
-
-  // whenever date changes, default select first entry
-  React.useEffect(() => {
-    if (selectedDayEntries.length) {
-      setSelectedEntryId(selectedDayEntries[0].id);
-    } else {
-      setSelectedEntryId(null);
-    }
+  useEffect(() => {
+    if (selectedDayEntries.length) setSelectedEntryId(selectedDayEntries[0].id);
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const monthLabel = useMemo(() => {
-    return viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  }, [viewDate]);
-
+  const monthLabel = useMemo(
+    () => viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+    [viewDate]
+  );
   const cells = useMemo(() => getMonthGrid(viewDate), [viewDate]);
 
   function goPrevMonth() {
@@ -137,7 +232,6 @@ export default function PastEntries() {
     d.setMonth(d.getMonth() - 1);
     setViewDate(d);
   }
-
   function goNextMonth() {
     const d = new Date(viewDate);
     d.setMonth(d.getMonth() + 1);
@@ -148,116 +242,106 @@ export default function PastEntries() {
     <main className="pe-page">
       <div className="pe-inner">
         <div className="pe-layout">
-          {/* LEFT */}
+
+          {/* ── LEFT column ── */}
           <section className="pe-left">
+
+            {/* Calendar */}
             <div className="pe-card pe-calendarCard">
               <div className="pe-calHeader">
-                <button className="pe-calNav" onClick={goPrevMonth} aria-label="Previous month">
-                  ‹
-                </button>
+                <button className="pe-calNav" onClick={goPrevMonth} aria-label="Previous month">‹</button>
                 <div className="pe-calTitle">{monthLabel}</div>
-                <button className="pe-calNav" onClick={goNextMonth} aria-label="Next month">
-                  ›
-                </button>
+                <button className="pe-calNav" onClick={goNextMonth} aria-label="Next month">›</button>
               </div>
 
               <div className="pe-dow">
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-                  <div key={d} className="pe-dowCell">
-                    {d}
-                  </div>
+                {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+                  <div key={d} className="pe-dowCell">{d}</div>
                 ))}
               </div>
 
               <div className="pe-grid">
                 {cells.map((d) => {
-                  const iso = toISODate(d);
-                  const inMonth = sameMonth(d, viewDate);
+                  const iso        = toISODate(d);
+                  const inMonth    = sameMonth(d, viewDate);
                   const isSelected = iso === selectedDate;
                   const hasEntries = entriesByDate.has(iso);
-
                   return (
                     <button
                       key={iso}
                       type="button"
-                      className={[
-                        "pe-day",
-                        inMonth ? "" : "is-out",
-                        isSelected ? "is-selected" : "",
-                      ].join(" ")}
+                      className={["pe-day", inMonth ? "" : "is-out", isSelected ? "is-selected" : ""].join(" ")}
                       onClick={() => setSelectedDate(iso)}
                       aria-label={`Select ${iso}`}
                     >
                       <span className="pe-dayNum">{d.getDate()}</span>
-                      {hasEntries ? <span className="pe-dot" aria-hidden="true" /> : null}
+                      {hasEntries && <span className="pe-dot" aria-hidden="true" />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
+            {/* Entry list */}
             <div className="pe-card pe-listCard">
               <div className="pe-listHeader">
-                <div className="pe-listTitle">{formatLongDate(selectedDate)}</div>
+                <div className="pe-listTitle">All entries</div>
                 <div className="pe-listSub">
-                  {selectedDayEntries.length
-                    ? `${selectedDayEntries.length} entr${selectedDayEntries.length === 1 ? "y" : "ies"}`
+                  {allEntries.length
+                    ? `${allEntries.length} entr${allEntries.length === 1 ? "y" : "ies"}`
                     : "No entries"}
                 </div>
               </div>
 
-              {selectedDayEntries.length ? (
+              {loading ? (
+                <div className="pe-emptyList">Loading entries…</div>
+              ) : error ? (
+                <div className="pe-emptyList">{error}</div>
+              ) : allEntries.length ? (
                 <div className="pe-entryList">
-                  {selectedDayEntries.map((e) => {
-                    const active = e.id === (selectedEntry?.id ?? null);
+                  {allEntries.map((e) => {
+                    const active     = e.id === (selectedEntry?.id ?? null);
+                    const moodColor  = moodColorFromLabel(e.moodLabel);
                     return (
                       <button
                         key={e.id}
                         type="button"
                         className={`pe-entryRow ${active ? "is-active" : ""}`}
-                        onClick={() => setSelectedEntryId(e.id)}
+                        onClick={() => { setSelectedEntryId(e.id); setSelectedDate(e.date); }}
                       >
                         <div className="pe-entryRow__top">
-                          <span className="pe-time">{e.timeLabel}</span>
-                          <span className="pe-mood">{e.moodLabel}</span>
+                          <span className="pe-time">{formatLongDate(e.date)}</span>
+                        {/* </div>
+                        <div className="pe-entryRow__top"> */}
+                          {/* <span className="pe-time">{e.timeLabel}</span> */}
+                          <span
+                            className="pe-mood"
+                            style={{ color: moodColor }}
+                          >
+                            {e.moodLabel}
+                          </span>
                         </div>
                         <div className="pe-entryRow__title">{e.title}</div>
+                        {e.suggestion && (
+                          <div className="pe-entryRow__suggestionHint">
+                            ✦ AI suggestion available
+                          </div>
+                        )}
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="pe-emptyList">Nothing found</div>
+                <div className="pe-emptyList">No entries found</div>
               )}
             </div>
           </section>
 
-          {/* RIGHT */}
+          {/* ── RIGHT column ── */}
           <section className="pe-right">
-            <div className="pe-card pe-detailCard">
-              <div className="pe-detailHeader">
-                <div className="pe-detailDate">{formatLongDate(selectedDate)}</div>
-              </div>
-
-              {selectedEntry ? (
-                <article className="pe-detailBody">
-                  <div className="pe-detailMeta">
-                    <span className="pe-detailTime">{selectedEntry.timeLabel}</span>
-                    <span className="pe-detailMood">{selectedEntry.moodLabel}</span>
-                  </div>
-
-                  <h2 className="pe-detailTitle">{selectedEntry.title}</h2>
-                  <div className="pe-paper">
-                    <p className="pe-detailText">{selectedEntry.text}</p>
-                  </div>
-                </article>
-              ) : (
-                <div className="pe-detailEmpty">
-                  Select a day with entries to view your reflection.
-                </div>
-              )}
-            </div>
+            <EntryDetail entry={selectedEntry} date={selectedDate} />
           </section>
+
         </div>
       </div>
     </main>

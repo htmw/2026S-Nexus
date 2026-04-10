@@ -75,3 +75,12 @@ async def create_checkin(
     insert_result = await db.checkins.insert_one(doc)
     doc["_id"] = str(insert_result.inserted_id)
     return doc
+
+async def get_checkins_by_user(user_id: str, limit: int = 500) -> list[dict]:
+    """Retrieve all check-ins for a user, sorted newest first."""
+    db = get_database()
+    cursor = db.checkins.find({"user_id": user_id}).sort("created_at", -1)
+    docs = await cursor.to_list(length=limit)
+    for doc in docs:
+        doc["_id"] = str(doc["_id"])
+    return docs
