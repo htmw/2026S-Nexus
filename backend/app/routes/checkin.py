@@ -29,7 +29,7 @@ async def submit_checkin(
 
     return CheckinResponse(
         id=doc["_id"],
-        user_id = doc[user_id],
+        user_id = doc["user_id"],
         mood=doc["mood"],
         reflection=doc["reflection"],
         sentiment_score=doc["sentiment_score"],
