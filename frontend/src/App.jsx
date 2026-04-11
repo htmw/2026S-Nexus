@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./Pages/Navbar";
 
 import Journal from "./Pages/Journal";
@@ -7,6 +7,8 @@ import Insights from "./Pages/Insights";
 import PastEntries from "./Pages/PastEntries";
 import Login from "./Pages/Login";
 import Signup from "./Pages/Signup";
+import TherapistDashboard from "./Pages/TherapistDashboard";
+import PatientDetail from "./Pages/PatientDetail";
 import { Toaster } from "react-hot-toast";
 
 import { AuthProvider, useAuth } from "./context/Authcontext";
@@ -45,6 +47,14 @@ function AppRoutes (){
         <Route
           path="/past-entries"
           element={<ProtectedRoute><PastEntries /></ProtectedRoute>}
+        />
+        <Route
+          path="/therapist"
+          element={<ProtectedRoute><TherapistDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/therapist/patients/:patientId"
+          element={<ProtectedRoute><PatientDetail /></ProtectedRoute>}
         />
         <Route path="*" element={<Navigate to="/journal" replace />} />
       </Routes>

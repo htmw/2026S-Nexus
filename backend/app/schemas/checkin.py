@@ -7,7 +7,7 @@ class CheckinRequest(BaseModel):
     mood: int = Field(..., ge=0, le=5, description="Mood score from 0 (worst) to 5 (best)")
     reflection: Optional[str] = Field(
         None,
-        max_length=500,
+        max_length=5000,
         description="Optional free-text reflection about how you feel",
     )
 
@@ -31,7 +31,7 @@ class CheckinResponse(BaseModel):
         None, description="AI sentiment normalized to 0–5 scale"
     )
     sentiment_label: Optional[str] = Field(
-        None, description="POSITIVE or NEGATIVE"
+        None, description="positive, negative, neutral, or Pending"
     )
     sentiment_confidence: Optional[float] = Field(
         None, description="Raw model confidence 0.0–1.0"
@@ -45,6 +45,12 @@ class CheckinResponse(BaseModel):
     suggestion: Optional[str] = Field(
         None, description="Personalized suggestion based on normalized sentiment/mood"
     )
+    sentiment: str | None = None
+    confidence: float | None = None
+    confidence_score: float | None = None
+    analysed_at: datetime | None = None
+    analysis_retry_pending: bool = False
+    predicted_mood: float | None = None
     created_at: datetime
 
 class ChartDataset(BaseModel):
@@ -84,3 +90,68 @@ class InsightResponse(BaseModel):
         description="7-day rolling averages over time, ready for Chart.js",
     )
     suggestion: str
+
+
+class SentimentCount(BaseModel):
+    sentiment: str
+    count: int
+
+class SentimentSummaryResponse(BaseModel):
+    total_entries: int
+    counts: list[SentimentCount]
+
+
+class PastEntryResponse(BaseModel):
+    id: str
+    mood: int
+    reflection: str
+    sentiment: str
+    confidence: float
+    suggestion: str
+    predicted_mood: float
+    created_at: datetime
+
+
+class PastEntriesResponse(BaseModel):
+    entries: list[PastEntryResponse]
+
+
+class MoodHistoryPoint(BaseModel):
+    date: datetime
+    sentiment_label: str
+    confidence_score: float | None = None
+
+
+class MoodHistoryResponse(BaseModel):
+    entries: list[MoodHistoryPoint]
+
+
+class TherapistPatientProfileResponse(BaseModel):
+    patient_id: str
+    name: str
+    email: str
+    sharing_enabled: bool
+
+
+class TherapistPatientListResponse(BaseModel):
+    patients: list[TherapistPatientProfileResponse]
+
+
+class TherapistPatientEntryResponse(BaseModel):
+    date: datetime
+    text: str
+    sentiment_label: str
+
+
+class TherapistPatientEntriesResponse(BaseModel):
+    entries: list[TherapistPatientEntryResponse]
+
+
+class TherapistPatientTrendPoint(BaseModel):
+    date: datetime
+    sentiment_label: str
+    confidence_score: float
+
+
+class TherapistPatientTrendResponse(BaseModel):
+    points: list[TherapistPatientTrendPoint]

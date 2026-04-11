@@ -4,26 +4,48 @@ const api = axios.create({
   baseURL: "http://localhost:8000/api",
 });
 
-let _token = null;
- 
+let authToken = null;
+
 export function setAuthToken(token) {
-  _token = token;
+  authToken = token;
 }
- 
+
+function getAuthContext() {
+  // Local header-based auth context used by backend middleware.
+  const userId = localStorage.getItem("mindmirror:userId") || "patient-demo-1";
+  const role = localStorage.getItem("mindmirror:role") || "patient";
+  return { userId, role };
+}
+
 api.interceptors.request.use((config) => {
-  if (_token) {
-    config.headers.Authorization = `Bearer ${_token}`;
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
   }
+
+  const { userId, role } = getAuthContext();
+  config.headers["x-user-id"] = userId;
+  config.headers["x-user-role"] = role;
   return config;
 });
- 
+
 export const authAPI = {
-  login:    (data) => api.post("/login",    data),
+  login: (data) => api.post("/login", data),
   register: (data) => api.post("/register", data),
 };
+
 export const checkinAPI = {
   create: (data) => api.post("/checkin", data),
   getAll: () => api.get("/checkins"),
+  list: () => api.get("/checkins"),
+  summary: () => api.get("/sentiment-summary"),
+  history: () => api.get("/mood/history"),
+};
+
+export const therapistAPI = {
+  patients: () => api.get("/therapist/patients"),
+  patientProfile: (patientId) => api.get(`/therapist/patients/${patientId}/profile`),
+  patientEntries: (patientId) => api.get(`/therapist/patients/${patientId}/journal-entries`),
+  patientMoodTrend: (patientId) => api.get(`/therapist/patients/${patientId}/mood-trend`),
 };
 
 export default api;

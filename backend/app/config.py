@@ -9,8 +9,10 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = 60 * 24  # 24 hours
     GROQ_API_KEY: str = ""  # Set in .env — leave empty to disable Groq
 
-    class Config:
-        env_file = ".env"
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()

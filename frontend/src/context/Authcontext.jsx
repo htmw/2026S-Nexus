@@ -11,12 +11,16 @@ export function AuthProvider({ children }) {
     setAuthToken(tokenStr);
     setToken(tokenStr);
     setUser(userObj);
+    localStorage.setItem("mindmirror:userId", userObj?.id || "patient-demo-1");
+    localStorage.setItem("mindmirror:role", "patient");
   }, []);
 
   const logout = useCallback(() => {
     setAuthToken(null);
     setToken(null);
     setUser(null);
+    localStorage.removeItem("mindmirror:userId");
+    localStorage.removeItem("mindmirror:role");
   }, []);
 
   const value = useMemo(

@@ -135,6 +135,13 @@
   gap: 18px;
 }
 
+.ins-gridFull {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
 @media (max-width: 980px) {
   .ins-grid2 {
     grid-template-columns: 1fr;

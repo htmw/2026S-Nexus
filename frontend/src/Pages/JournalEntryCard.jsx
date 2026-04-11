@@ -51,9 +51,12 @@ export default function JournalEntryCard({
   title       = "How are you feeling today?",
   subtitle    = "Take a moment to reflect. No format needed — just write naturally.",
   placeholder = "What's on your mind today? How did your day go?",
-  maxChars    = 2000,
-}) {
-  const [text, setText]                 = useState("");
+  maxChars = 5000,
+  onSubmitted,
+}) 
+{
+  const [text, setText] = useState("");
+  
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestion, setSuggestion]     = useState(null); // holds suggestion after submit
@@ -63,7 +66,6 @@ export default function JournalEntryCard({
     isDirty: false,
     lastSavedAt: null,
   });
-
   // Load draft once
   useEffect(() => {
     try {
@@ -111,6 +113,16 @@ export default function JournalEntryCard({
         mood:       estimatedMood.index,
         reflection: text.trim() || null,
       });
+
+      window.dispatchEvent(
+        new CustomEvent("journal:submitted", {
+          detail: res?.data,
+        })
+      );
+
+      if (typeof onSubmitted === "function") {
+        onSubmitted(res?.data);
+      }
 
       // The API returns the full checkin object including the suggestion
       const returnedSuggestion = res?.data?.suggestion;

@@ -15,11 +15,15 @@ export default function Navbar({
     navigate("/login", { replace: true });
   }
 
-  const tabs = [
-    { label: "Journal", to: "/journal" },
-    { label: "Insights", to: "/insights" },
-    { label: "Past Entries", to: "/past-entries" },
-  ];
+  const role = localStorage.getItem("mindmirror:role") || "patient";
+  const tabs =
+    role === "therapist"
+      ? [{ label: "Therapist Dashboard", to: "/therapist" }]
+      : [
+          { label: "Journal", to: "/journal" },
+          { label: "Insights", to: "/insights" },
+          { label: "Past Entries", to: "/past-entries" },
+        ];
 
   return (
     <header className="mm-navbar">
