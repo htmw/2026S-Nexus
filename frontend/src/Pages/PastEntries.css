@@ -25,19 +25,19 @@
 /* Card base */
 .pe-card {
   border-radius: 18px;
-  background: #fbf4ee;
+  background: #fbf4ee; /* clay */
   border: 1px solid rgba(0, 0, 0, 0.10);
   box-sizing: border-box;
 }
 
-/* ── LEFT column ─────────────────────────────────────────────── */
+/* LEFT column */
 .pe-left {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* Calendar */
+/* Calendar card */
 .pe-calendarCard {
   padding: 14px 14px 16px;
   background: rgba(255, 255, 255, 0.55);
@@ -69,7 +69,9 @@
   color: #6f7a80;
 }
 
-.pe-calNav:hover { filter: brightness(0.98); }
+.pe-calNav:hover {
+  filter: brightness(0.98);
+}
 
 .pe-dow {
   display: grid;
@@ -85,6 +87,7 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* days grid */
 .pe-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -109,7 +112,9 @@
   box-shadow: 0 0 0 3px rgba(108, 143, 198, 0.10);
 }
 
-.pe-day.is-out     { opacity: 0.35; }
+.pe-day.is-out {
+  opacity: 0.35;
+}
 
 .pe-day.is-selected {
   border-color: rgba(108, 143, 198, 0.55);
@@ -134,7 +139,7 @@
   opacity: 0.9;
 }
 
-/* Entry list */
+/* List card */
 .pe-listCard {
   background: rgba(255, 255, 255, 0.55);
   padding: 14px;
@@ -176,7 +181,6 @@
   border-radius: 14px;
   padding: 12px 12px;
   cursor: pointer;
-  width: 100%;
 }
 
 .pe-entryRow:hover {
@@ -207,16 +211,6 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* Hint that a suggestion exists */
-.pe-entryRow__suggestionHint {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #6c8fc6;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  letter-spacing: 0.2px;
-}
-
 .pe-emptyList {
   padding: 18px 8px;
   color: rgba(47, 47, 47, 0.55);
@@ -224,9 +218,9 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* ── RIGHT column — detail card ──────────────────────────────── */
+/* RIGHT side */
 .pe-right .pe-detailCard {
-  padding: 22px 22px 28px;
+  padding: 18px;
   background: rgba(255, 255, 255, 0.40);
   min-height: 560px;
 }
@@ -235,9 +229,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 4px;
 }
 
 .pe-detailDate {
@@ -245,114 +236,213 @@
   font-size: 15px;
   font-weight: 700;
   color: #6C8FC6;
-}
 
-/* Mood badge with dynamic colour via CSS var */
-.pe-detailMoodBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  letter-spacing: 0.3px;
-  color: var(--mood-color, #6c8fc6);
-  background: color-mix(in srgb, var(--mood-color, #6c8fc6) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--mood-color, #6c8fc6) 25%, transparent);
 }
 
 .pe-detailBody {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .pe-detailMeta {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 12px;
-  color: rgba(47, 47, 47, 0.50);
-  font-weight: 600;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  margin-bottom: 16px;
-}
-
-/* Sections (reflection + suggestion) */
-.pe-section {
-  margin-bottom: 20px;
-}
-
-.pe-section__label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: rgba(47, 47, 47, 0.45);
+  font-size: 13px;
+  color: rgba(47, 47, 47, 0.65);
+  font-weight: 700;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   margin-bottom: 10px;
+  margin-top: -5px;
 }
 
-.pe-section__label--suggestion {
-  color: #6c8fc6;
+.pe-detailTitle {
+  margin: 0 0 12px;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2f2f2f;
 }
 
-.pe-suggestion-star {
-  font-size: 13px;
-  line-height: 1;
-}
-
-/* Reflection paper block */
 .pe-paper {
   border-radius: 14px;
   background: rgba(251, 244, 238, 0.85);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 18px 20px;
+  padding: 16px;
   position: relative;
 }
 
 .pe-detailText {
   margin: 0;
   white-space: pre-wrap;
-  font-size: 15px;
-  line-height: 1.75;
-  color: #2f2f2f;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-}
-
-.pe-noContent {
-  margin: 0;
-  font-size: 14px;
-  color: rgba(47, 47, 47, 0.40);
-  font-style: italic;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-}
-
-/* AI Suggestion box */
-.pe-suggestionBox {
-  border-radius: 14px;
-  background: linear-gradient(135deg,
-    rgba(108, 143, 198, 0.08) 0%,
-    rgba(122, 121, 201, 0.06) 100%
-  );
-  border: 1px solid rgba(108, 143, 198, 0.22);
-  padding: 18px 20px;
-  position: relative;
-}
-
-.pe-suggestionText {
-  margin: 0;
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
   font-size: 16px;
   line-height: 1.7;
   color: #2f2f2f;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .pe-detailEmpty {
   margin-top: 14px;
   color: rgba(47, 47, 47, 0.55);
   font-size: 15px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+/* ── Filter card ─────────────────────────────────────────────────────────── */
+.pe-filterCard {
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pe-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  font-size: 13px;
+  color: #2f2f2f;
+  outline: none;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.pe-search:focus {
+  border-color: rgba(108, 143, 198, 0.55);
+  box-shadow: 0 0 0 3px rgba(108, 143, 198, 0.14);
+}
+
+.pe-moodFilters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pe-moodBtn {
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6f7a80;
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  transition: all 120ms ease;
+}
+
+.pe-moodBtn:hover {
+  border-color: rgba(108, 143, 198, 0.45);
+  color: #2f2f2f;
+}
+
+.pe-moodBtn.is-active {
+  border-color: rgba(108, 143, 198, 0.6);
+  background: rgba(108, 143, 198, 0.12);
+  color: #4a70a8;
+  box-shadow: 0 0 0 3px rgba(108, 143, 198, 0.10);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────────── */
+.pe-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 8px;
+}
+
+.pe-pageBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  font-size: 18px;
+  color: #6f7a80;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 120ms ease;
+}
+
+.pe-pageBtn:hover:not(:disabled) {
+  border-color: rgba(108, 143, 198, 0.5);
+  color: #4a70a8;
+}
+
+.pe-pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pe-pageInfo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6f7a80;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  min-width: 52px;
+  text-align: center;
+}
+
+/* ── Detail header badges ────────────────────────────────────────────────── */
+.pe-detailBadges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pe-moodBadge,
+.pe-sentimentBadge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.pe-sentimentBadge {
+  background: rgba(108, 143, 198, 0.12);
+  color: #4a70a8;
+}
+
+.pe-emotionTag {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(47, 47, 47, 0.55);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+/* ── Suggestion card in detail ───────────────────────────────────────────── */
+.pe-suggestionCard {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(122, 121, 201, 0.10);
+  border: 1px solid rgba(122, 121, 201, 0.18);
+}
+
+.pe-suggestionLabel {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #7a79c9;
+  margin-bottom: 6px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.pe-suggestionText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3f4850;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }

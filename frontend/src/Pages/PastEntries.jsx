@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import "./PastEntries.css";
 import { checkinAPI } from "../services/api";
+
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 function formatLongDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -14,8 +16,8 @@ function formatLongDate(iso) {
 }
 
 function toISODate(d) {
-  const y  = d.getFullYear();
-  const m  = String(d.getMonth() + 1).padStart(2, "0");
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
@@ -25,10 +27,10 @@ function sameMonth(a, b) {
 }
 
 function getMonthGrid(viewDate) {
-  const year  = viewDate.getFullYear();
+  const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const first = new Date(year, month, 1);
-  const startDay  = first.getDay();
+  const startDay = first.getDay();
   const gridStart = new Date(year, month, 1 - startDay);
   const cells = [];
   for (let i = 0; i < 42; i++) {
@@ -44,15 +46,12 @@ function moodLabelFromNumber(mood) {
   return map[mood] ?? "Unknown";
 }
 
-function moodColorFromLabel(label) {
-  const map = {
-    Awful: "#e07b7b",
-    Bad:   "#d4956a",
-    Meh:   "#b0a96a",
-    Good:  "#6aab84",
-    Great: "#6c8fc6",
+function moodColor(mood) {
+  const colors = {
+    0: "#e74c3c", 1: "#e74c3c", 2: "#e67e22",
+    3: "#f1c40f", 4: "#2ecc71", 5: "#27ae60",
   };
-  return map[label] ?? "#9ba8b0";
+  return colors[mood] ?? "#6c8fc6";
 }
 
 function titleFromReflection(reflection) {
@@ -62,163 +61,136 @@ function titleFromReflection(reflection) {
 }
 
 function mapCheckinToEntry(checkin, index) {
-  const created   = new Date(checkin.created_at);
+  const created = new Date(checkin.created_at);
   const validDate = Number.isNaN(created.getTime()) ? new Date() : created;
-
   return {
-    id:          checkin.id ?? `entry-${index}`,
-    date:        toISODate(validDate),
-    timeLabel:   validDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-    moodLabel:   moodLabelFromNumber(checkin.mood),
-    title:       titleFromReflection(checkin.reflection),
-    text:        checkin.reflection?.trim() || "",
-    suggestion:  checkin.suggestion?.trim() || "",
+    id: checkin.id ?? `entry-${index}`,
+    date: toISODate(validDate),
+    timeLabel: validDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+    moodLabel: moodLabelFromNumber(checkin.mood),
+    moodValue: checkin.mood,
+    title: titleFromReflection(checkin.reflection),
+    text: checkin.reflection?.trim() || "No reflection text for this entry.",
+    suggestion: checkin.suggestion,
+    sentimentLabel: checkin.sentiment_label,
+    emotionLabel: checkin.emotion_label,
     createdAtMs: validDate.getTime(),
   };
 }
 
-// ── Detail panel ─────────────────────────────────────────────────────────────
-function EntryDetail({ entry, date }) {
-  if (!entry) {
-    return (
-      <div className="pe-card pe-detailCard">
-        <div className="pe-detailHeader">
-          <div className="pe-detailDate">{formatLongDate(date)}</div>
-        </div>
-        <div className="pe-detailEmpty">No entry selected.</div>
-      </div>
-    );
-  }
+const PAGE_SIZE = 3;
 
-  const moodColor = moodColorFromLabel(entry.moodLabel);
+// ── component ─────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="pe-card pe-detailCard">
-      {/* Header */}
-      <div className="pe-detailHeader">
-        <div className="pe-detailDate">{formatLongDate(entry.date)}</div>
-        <span className="pe-detailMoodBadge" style={{ "--mood-color": moodColor }}>
-          {entry.moodLabel}
-        </span>
-      </div>
-
-      <article className="pe-detailBody">
-        {/* <div className="pe-detailMeta">
-          <span className="pe-detailTime">{entry.timeLabel}</span>
-        </div> */}
-
-        {/* Reflection */}
-        {entry.text ? (
-          <div className="pe-section">
-            <div className="pe-section__label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Reflection
-            </div>
-            <div className="pe-paper">
-              <p className="pe-detailText">{entry.text}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="pe-section">
-            <div className="pe-section__label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Reflection
-            </div>
-            <p className="pe-noContent">No reflection written for this entry.</p>
-          </div>
-        )}
-
-        {/* AI Suggestion */}
-        {entry.suggestion ? (
-          <div className="pe-section pe-section--suggestion">
-            <div className="pe-section__label pe-section__label--suggestion">
-              <span className="pe-suggestion-star" aria-hidden="true">✦</span>
-              AI Suggestion
-            </div>
-            <div className="pe-suggestionBox">
-              <p className="pe-suggestionText">{entry.suggestion}</p>
-            </div>
-          </div>
-        ) : null}
-      </article>
-    </div>
-  );
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
 export default function PastEntries() {
-  const [viewDate,       setViewDate]       = useState(() => new Date());
-  const [selectedDate,   setSelectedDate]   = useState(() => toISODate(new Date()));
+  const [viewDate, setViewDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(() => toISODate(new Date()));
   const [selectedEntryId, setSelectedEntryId] = useState(null);
 
-  const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [moodFilter, setMoodFilter] = useState("all"); // "all" | "1".."5"
+
+  const listRef = useRef(null);
+
+  // ── fetch ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     let active = true;
-
     async function fetchEntries() {
       setLoading(true);
       setError("");
       try {
-        const res      = await checkinAPI.getAll();
+        const res = await checkinAPI.getAll();
         const checkins = Array.isArray(res.data) ? res.data : [];
-        const mapped   = checkins
+        const mapped = checkins
           .map(mapCheckinToEntry)
           .sort((a, b) => b.createdAtMs - a.createdAtMs);
-
         if (!active) return;
-        setEntries(mapped);
-
+        setAllEntries(mapped);
         if (mapped.length > 0) {
           setSelectedDate(mapped[0].date);
           setSelectedEntryId(mapped[0].id);
-        } else {
-          setSelectedEntryId(null);
         }
       } catch (err) {
         if (!active) return;
         setError(err.response?.data?.detail || "Failed to load past entries.");
-        setEntries([]);
-        setSelectedEntryId(null);
       } finally {
         if (active) setLoading(false);
       }
     }
-
     fetchEntries();
     return () => { active = false; };
   }, []);
 
+  // ── derived filtered + paginated list ────────────────────────────────────
+
+  const filteredEntries = useMemo(() => {
+    let result = allEntries;
+
+    if (moodFilter !== "all") {
+      const val = parseInt(moodFilter, 10);
+      result = result.filter((e) => e.moodValue === val);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (e) =>
+          e.text.toLowerCase().includes(q) ||
+          e.title.toLowerCase().includes(q) ||
+          e.date.includes(q)
+      );
+    }
+
+    return result;
+  }, [allEntries, moodFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
+
+  const pagedEntries = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredEntries.slice(start, start + PAGE_SIZE);
+  }, [filteredEntries, page]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [moodFilter, searchQuery]);
+
+  // ── calendar helpers ──────────────────────────────────────────────────────
+
   const entriesByDate = useMemo(() => {
     const map = new Map();
-    for (const e of entries) {
+    for (const e of allEntries) {
       if (!map.has(e.date)) map.set(e.date, []);
       map.get(e.date).push(e);
     }
-    for (const [k, arr] of map.entries()) {
-      arr.sort((a, b) => b.createdAtMs - a.createdAtMs);
-      map.set(k, arr);
-    }
     return map;
-  }, [entries]);
+  }, [allEntries]);
 
-  const allEntries        = useMemo(() => entries, [entries]);
-  const selectedDayEntries = useMemo(() => entriesByDate.get(selectedDate) ?? [], [entriesByDate, selectedDate]);
-  const selectedEntry      = useMemo(
-    () => allEntries.find((e) => e.id === selectedEntryId) || allEntries[0] || null,
+  const selectedEntry = useMemo(
+    () => allEntries.find((e) => e.id === selectedEntryId) ?? null,
     [allEntries, selectedEntryId]
   );
 
+  // When selected date changes, auto-select the first entry on that date
   useEffect(() => {
-    if (selectedDayEntries.length) setSelectedEntryId(selectedDayEntries[0].id);
+    const dayEntries = entriesByDate.get(selectedDate);
+    if (dayEntries?.length) {
+      setSelectedEntryId(dayEntries[0].id);
+      // Also jump to that entry in the list if it's in current filtered set
+      const idx = filteredEntries.findIndex((e) => e.id === dayEntries[0].id);
+      if (idx >= 0) {
+        const targetPage = Math.floor(idx / PAGE_SIZE) + 1;
+        setPage(targetPage);
+        // Scroll list to top so user sees the entry
+        setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      }
+    }
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const monthLabel = useMemo(
@@ -238,12 +210,35 @@ export default function PastEntries() {
     setViewDate(d);
   }
 
+  // Navigate calendar to selected entry's month
+  const handleEntryClick = useCallback((entry) => {
+    setSelectedEntryId(entry.id);
+    setSelectedDate(entry.date);
+    const entryMonth = new Date(entry.createdAtMs);
+    entryMonth.setDate(1);
+    setViewDate(entryMonth);
+  }, []);
+
+  // ── pagination controls ───────────────────────────────────────────────────
+
+  function goToPage(p) {
+    setPage(p);
+    listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ── render ────────────────────────────────────────────────────────────────
+
+  const hasSuggestion = selectedEntry?.suggestion;
+  const sentimentBadge = selectedEntry?.sentimentLabel
+    ? selectedEntry.sentimentLabel === "POSITIVE" ? "😊 Positive" : "😔 Negative"
+    : null;
+
   return (
     <main className="pe-page">
       <div className="pe-inner">
         <div className="pe-layout">
 
-          {/* ── LEFT column ── */}
+          {/* ── LEFT COLUMN ──────────────────────────────────────────────── */}
           <section className="pe-left">
 
             {/* Calendar */}
@@ -253,19 +248,21 @@ export default function PastEntries() {
                 <div className="pe-calTitle">{monthLabel}</div>
                 <button className="pe-calNav" onClick={goNextMonth} aria-label="Next month">›</button>
               </div>
-
               <div className="pe-dow">
-                {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
                   <div key={d} className="pe-dowCell">{d}</div>
                 ))}
               </div>
-
               <div className="pe-grid">
                 {cells.map((d) => {
-                  const iso        = toISODate(d);
-                  const inMonth    = sameMonth(d, viewDate);
+                  const iso = toISODate(d);
+                  const inMonth = sameMonth(d, viewDate);
                   const isSelected = iso === selectedDate;
-                  const hasEntries = entriesByDate.has(iso);
+                  const dayEntries = entriesByDate.get(iso) || [];
+                  const hasEntries = dayEntries.length > 0;
+                  const avgMood = hasEntries
+                    ? dayEntries.reduce((s, e) => s + e.moodValue, 0) / dayEntries.length
+                    : null;
                   return (
                     <button
                       key={iso}
@@ -275,20 +272,26 @@ export default function PastEntries() {
                       aria-label={`Select ${iso}`}
                     >
                       <span className="pe-dayNum">{d.getDate()}</span>
-                      {hasEntries && <span className="pe-dot" aria-hidden="true" />}
+                      {hasEntries && (
+                        <span
+                          className="pe-dot"
+                          aria-hidden="true"
+                          style={{ background: moodColor(Math.round(avgMood)) }}
+                        />
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Entry list */}
+            {/* Entry List */}
             <div className="pe-card pe-listCard">
               <div className="pe-listHeader">
                 <div className="pe-listTitle">All entries</div>
                 <div className="pe-listSub">
-                  {allEntries.length
-                    ? `${allEntries.length} entr${allEntries.length === 1 ? "y" : "ies"}`
+                  {filteredEntries.length
+                    ? `${filteredEntries.length} entr${filteredEntries.length === 1 ? "y" : "ies"}`
                     : "No entries"}
                 </div>
               </div>
@@ -297,49 +300,122 @@ export default function PastEntries() {
                 <div className="pe-emptyList">Loading entries…</div>
               ) : error ? (
                 <div className="pe-emptyList">{error}</div>
-              ) : allEntries.length ? (
-                <div className="pe-entryList">
-                  {allEntries.map((e) => {
-                    const active     = e.id === (selectedEntry?.id ?? null);
-                    const moodColor  = moodColorFromLabel(e.moodLabel);
-                    return (
-                      <button
-                        key={e.id}
-                        type="button"
-                        className={`pe-entryRow ${active ? "is-active" : ""}`}
-                        onClick={() => { setSelectedEntryId(e.id); setSelectedDate(e.date); }}
-                      >
-                        <div className="pe-entryRow__top">
-                          <span className="pe-time">{formatLongDate(e.date)}</span>
-                        {/* </div>
-                        <div className="pe-entryRow__top"> */}
-                          {/* <span className="pe-time">{e.timeLabel}</span> */}
-                          <span
-                            className="pe-mood"
-                            style={{ color: moodColor }}
-                          >
-                            {e.moodLabel}
-                          </span>
-                        </div>
-                        <div className="pe-entryRow__title">{e.title}</div>
-                        {e.suggestion && (
-                          <div className="pe-entryRow__suggestionHint">
-                            ✦ AI suggestion available
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+              ) : filteredEntries.length === 0 ? (
+                <div className="pe-emptyList">
+                  {searchQuery || moodFilter !== "all"
+                    ? "No entries match your filter."
+                    : "No entries found."}
                 </div>
               ) : (
-                <div className="pe-emptyList">No entries found</div>
+                <>
+                  <div className="pe-entryList" ref={listRef}>
+                    {pagedEntries.map((e) => {
+                      const active = e.id === selectedEntryId;
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          className={`pe-entryRow ${active ? "is-active" : ""}`}
+                          onClick={() => handleEntryClick(e)}
+                        >
+                          <div className="pe-entryRow__top">
+                            <span className="pe-time">{formatLongDate(e.date)}</span>
+                          {/* </div>
+                          <div className="pe-entryRow__top">
+                            <span className="pe-time">{e.timeLabel}</span> */}
+                            <span
+                              className="pe-mood"
+                              style={{ color: moodColor(e.moodValue) }}
+                            >
+                              {e.moodLabel}
+                            </span>
+                          </div>
+                          <div className="pe-entryRow__title">{e.title}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="pe-pagination">
+                      <button
+                        className="pe-pageBtn"
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page === 1}
+                        aria-label="Previous page"
+                      >
+                        ‹
+                      </button>
+                      <span className="pe-pageInfo">
+                        {page} / {totalPages}
+                      </span>
+                      <button
+                        className="pe-pageBtn"
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page === totalPages}
+                        aria-label="Next page"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </section>
 
-          {/* ── RIGHT column ── */}
+          {/* ── RIGHT COLUMN ──────────────────────────────────────────────── */}
           <section className="pe-right">
-            <EntryDetail entry={selectedEntry} date={selectedDate} />
+            <div className="pe-card pe-detailCard">
+              {selectedEntry ? (
+                <>
+                  <div className="pe-detailHeader">
+                    <div className="pe-detailDate">{formatLongDate(selectedEntry.date)}</div>
+                    <div className="pe-detailBadges">
+                      <span
+                        className="pe-moodBadge"
+                        style={{ background: `${moodColor(selectedEntry.moodValue)}22`, color: moodColor(selectedEntry.moodValue) }}
+                      >
+                        {selectedEntry.moodLabel}
+                      </span>
+                      {sentimentBadge && (
+                        <span className="pe-sentimentBadge">{sentimentBadge}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <article className="pe-detailBody">
+                    <div className="pe-detailMeta">
+                      {selectedEntry.emotionLabel && (
+                        <span className="pe-emotionTag">
+                          Emotion: {selectedEntry.emotionLabel}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="pe-paper">
+                      <p className="pe-detailText">{selectedEntry.text}</p>
+                    </div>
+
+                    {/* Suggestion card */}
+                    {hasSuggestion && (
+                      <div className="pe-suggestionCard">
+                        <div className="pe-suggestionLabel">💡 Suggestion</div>
+                        <p className="pe-suggestionText">{selectedEntry.suggestion}</p>
+                      </div>
+                    )}
+                  </article>
+                </>
+              ) : (
+                <div className="pe-detailHeader">
+                  <div className="pe-detailDate">{formatLongDate(selectedDate)}</div>
+                  <div className="pe-detailEmpty" style={{ marginTop: 24 }}>
+                    No entry selected. Pick one from the list or tap a date on the calendar.
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
         </div>
