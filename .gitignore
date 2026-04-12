@@ -1,0 +1,11 @@
+# Python
+backend/venv/
+backend/app/__pycache__/
+backend/.env
+__pycache__/
+
+# Node
+frontend/node_modules/
+
+#Mac
+.DS_Store
