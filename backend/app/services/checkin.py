@@ -10,6 +10,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 
 from app.database import get_database
+from app.errors import AppError
 from app.services.nlp import analyze_emotion, analyze_sentiment, is_emotion_loaded, is_model_loaded
 from app.services.suggestions import get_suggestion_for_checkin_async
 
@@ -110,6 +111,9 @@ def _history_label_or_pending(sentiment_label: str | None) -> str:
     return sentiment_label if sentiment_label in {"positive", "negative", "neutral"} else "Pending"
 
 
+_ANALYSIS_UNAVAILABLE_WARNING = "Analysis unavailable right now. Your entry was still saved."
+
+
 async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = None) -> dict:
     db = get_database()
     reflection_text = (reflection or "").strip()
@@ -125,6 +129,7 @@ async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = No
     analysed_at = None
     analysis_retry_pending = False
     predicted_mood = float(mood)
+    warning = None
 
     if reflection_text:
         if is_model_loaded():
@@ -141,13 +146,19 @@ async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = No
             except Exception:
                 logger.exception("Sentiment analysis failed for check-in")
                 sentiment = "PENDING"
-                confidence = 0.0
+                confidence = None
+                confidence_score = None
+                sentiment_confidence = None
                 analysis_retry_pending = True
+                warning = _ANALYSIS_UNAVAILABLE_WARNING
         else:
             logger.warning("NLP model not loaded; skipping sentiment analysis")
             sentiment = "PENDING"
-            confidence = 0.0
+            confidence = None
+            confidence_score = None
+            sentiment_confidence = None
             analysis_retry_pending = True
+            warning = _ANALYSIS_UNAVAILABLE_WARNING
 
         if is_emotion_loaded():
             try:
@@ -186,6 +197,7 @@ async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = No
         "analysed_at": analysed_at,
         "analysis_retry_pending": analysis_retry_pending,
         "suggestion": suggestion,
+        "warning": warning,
         "predicted_mood": predicted_mood,
         "created_at": _now_utc(),
     }
@@ -199,8 +211,13 @@ async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = No
             stored["_id"] = stored_id
             return stored
         except Exception:
-            logger.exception("Database insert failed; using fallback storage")
+            logger.exception("Database insert failed for check-in")
             _mark_db_unavailable()
+            raise AppError(
+                "Could not save your entry. Please try again.",
+                "database_unavailable",
+                status_code=500,
+            )
 
     fallback_doc = dict(checkin_data)
     fallback_doc["id"] = str(uuid.uuid4())
@@ -239,9 +256,11 @@ async def get_sentiment_summary() -> tuple[int, dict[str, int]]:
             docs = await db.checkins.find({}, {"sentiment": 1}).to_list(length=None)
             counts: dict[str, int] = {}
             for doc in docs:
-                sentiment = str(doc.get("sentiment") or "UNKNOWN")
+                sentiment = str(doc.get("sentiment") or "").upper()
+                if sentiment not in {"POSITIVE", "NEGATIVE", "NEUTRAL"}:
+                    continue
                 counts[sentiment] = counts.get(sentiment, 0) + 1
-            return len(docs), counts
+            return int(sum(counts.values())), counts
         except Exception:
             logger.exception("Database summary read failed; using fallback store")
             _mark_db_unavailable()
@@ -249,7 +268,9 @@ async def get_sentiment_summary() -> tuple[int, dict[str, int]]:
     fallback_entries = _read_fallback_entries() or _memory_store
     counts: dict[str, int] = {}
     for item in fallback_entries:
-        sentiment = str(item.get("sentiment") or "UNKNOWN")
+        sentiment = str(item.get("sentiment") or "").upper()
+        if sentiment not in {"POSITIVE", "NEGATIVE", "NEUTRAL"}:
+            continue
         counts[sentiment] = counts.get(sentiment, 0) + 1
     return int(sum(counts.values())), counts
 
@@ -315,9 +336,10 @@ async def get_past_entries(limit: int = 200, user_id: str | None = None) -> list
             "id": str(item.get("id") or item.get("_id") or ""),
             "mood": int(item.get("mood", 0)),
             "reflection": str(item.get("reflection", "") or ""),
-            "sentiment": str(item.get("sentiment") or "NEUTRAL"),
-            "confidence": float(item.get("confidence") or 0.0),
+            "sentiment": str(item.get("sentiment") or "PENDING"),
+            "confidence": float(item["confidence"]) if item.get("confidence") is not None else None,
             "suggestion": str(item.get("suggestion") or ""),
+            "warning": item.get("warning"),
             "predicted_mood": float(item.get("predicted_mood") or 0.0),
             "created_at": item.get("created_at"),
         }

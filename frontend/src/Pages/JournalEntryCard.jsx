@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./JournalEntryCard.css";
 import { checkinAPI } from "../services/api";
-import { toast } from "react-hot-toast";
+import { showNotice } from "../services/notifications";
 
 const STORAGE_KEY = "mindmirror:draft";
 
@@ -107,6 +107,7 @@ export default function JournalEntryCard({
   async function handleSubmit() {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
+    let wasSaved = false;
 
     try {
       const res = await checkinAPI.create({
@@ -126,20 +127,33 @@ export default function JournalEntryCard({
 
       // The API returns the full checkin object including the suggestion
       const returnedSuggestion = res?.data?.suggestion;
-
-      handleClear();
+      wasSaved = true;
 
       if (returnedSuggestion) {
         // Show the inline suggestion card
         setSuggestion(returnedSuggestion);
-      } else {
-        toast.success("Entry saved!");
+      }
+
+      if (res?.data?.warning) {
+        showNotice({
+          severity: "warning",
+          title: "Entry saved",
+          message: res.data.warning,
+        });
+      } else if (!returnedSuggestion) {
+        showNotice({
+          severity: "success",
+          title: "Entry saved",
+          message: "Entry submitted successfully.",
+        });
       }
     } catch (err) {
       console.error("Error submitting entry:", err);
-      toast.error("Failed to submit entry. Please try again.");
     } finally {
       setIsSubmitting(false);
+      if (wasSaved) {
+        handleClear();
+      }
     }
   }
 

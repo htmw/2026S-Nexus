@@ -1,7 +1,10 @@
 import axios from "axios";
+import { ApiError, normalizeApiError } from "./apiErrors";
+import { showApiError } from "./notifications";
 
 const api = axios.create({
   baseURL: "http://localhost:8000/api",
+  timeout: 10000,
 });
 
 let authToken = null;
@@ -27,6 +30,17 @@ api.interceptors.request.use((config) => {
   config.headers["x-user-role"] = role;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const normalizedError = normalizeApiError(error);
+    if (!error.config?.skipGlobalErrorToast) {
+      showApiError(normalizedError.message);
+    }
+    return Promise.reject(normalizedError);
+  }
+);
 
 export const authAPI = {
   login: (data) => api.post("/login", data),
@@ -55,3 +69,4 @@ export const therapistAPI = {
 };
 
 export default api;
+export { ApiError, normalizeApiError };

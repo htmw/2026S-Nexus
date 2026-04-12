@@ -2,11 +2,20 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.auth import reject_therapist_mutations
 from app.database import connect_to_mongo, close_mongo_connection
+from app.errors import (
+    AppError,
+    app_error_handler,
+    http_exception_handler,
+    json_error,
+    unhandled_exception_handler,
+    validation_exception_handler,
+)
 from app.routes.auth import router as auth_router
 from app.routes.checkin import router as checkin_router
 from app.routes.insight import router as insight_router
@@ -39,6 +48,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(Exception, unhandled_exception_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -66,7 +80,7 @@ async def therapist_readonly_guard(request, call_next):
         reject_therapist_mutations(request, role)
     except Exception as error:
         if getattr(error, "status_code", None) == 403:
-            return JSONResponse(status_code=403, content={"detail": str(error.detail)})
+            return json_error(403, str(error.detail), "forbidden")
         raise
     return await call_next(request)
 

@@ -50,6 +50,7 @@ class CheckinResponse(BaseModel):
     confidence_score: float | None = None
     analysed_at: datetime | None = None
     analysis_retry_pending: bool = False
+    warning: str | None = None
     predicted_mood: float | None = None
     created_at: datetime
 

@@ -2,7 +2,7 @@ import logging
 
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 
 from app.auth import AuthUser, get_current_user, require_patient
 from app.schemas.checkin import CheckinRequest, CheckinResponse, SentimentCount, SentimentSummaryResponse
@@ -20,6 +20,7 @@ router = APIRouter(tags=["checkin"])
 )
 async def submit_checkin(
     checkin: CheckinRequest,
+    response: Response,
     user: AuthUser = Depends(get_current_user),
 ):
     await require_patient(user)
@@ -28,6 +29,9 @@ async def submit_checkin(
         user_id=user.user_id,
         reflection=checkin.reflection,
     )
+
+    if doc.get("warning"):
+        response.status_code = status.HTTP_200_OK
 
     return CheckinResponse(
         id=str(doc.get("id") or doc.get("_id") or ""),
@@ -45,6 +49,7 @@ async def submit_checkin(
         analysed_at=doc.get("analysed_at"),
         analysis_retry_pending=bool(doc.get("analysis_retry_pending", False)),
         suggestion=doc.get("suggestion"),
+        warning=doc.get("warning"),
         predicted_mood=doc.get("predicted_mood"),
         created_at=doc["created_at"],
     )
@@ -73,6 +78,7 @@ async def list_checkins(user: AuthUser = Depends(get_current_user)):
             analysed_at=doc.get("analysed_at"),
             analysis_retry_pending=bool(doc.get("analysis_retry_pending", False)),
             suggestion=doc.get("suggestion"),
+            warning=doc.get("warning"),
             predicted_mood=doc.get("predicted_mood"),
             created_at=doc["created_at"],
         )
