@@ -41,6 +41,10 @@ export const checkinAPI = {
   history: () => api.get("/mood/history"),
 };
 
+export const dashboardAPI = {
+  get: () => api.get("/insight"),
+};
+
 export const therapistAPI = {
   patients: () => api.get("/therapist/patients"),
   patientProfile: (patientId) => api.get(`/therapist/patients/${patientId}/profile`),
