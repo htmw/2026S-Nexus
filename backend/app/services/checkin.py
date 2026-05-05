@@ -114,7 +114,9 @@ def _history_label_or_pending(sentiment_label: str | None) -> str:
 _ANALYSIS_UNAVAILABLE_WARNING = "Analysis unavailable right now. Your entry was still saved."
 
 
-async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = None) -> dict:
+async def create_checkin(
+    user_id: str, mood: int, reflection: Optional[str] = None, shared_with_therapist: bool = False
+) -> dict:
     db = get_database()
     reflection_text = (reflection or "").strip()
 
@@ -199,6 +201,7 @@ async def create_checkin(user_id: str, mood: int, reflection: Optional[str] = No
         "suggestion": suggestion,
         "warning": warning,
         "predicted_mood": predicted_mood,
+        "shared_with_therapist": shared_with_therapist,
         "created_at": _now_utc(),
     }
 
@@ -341,6 +344,7 @@ async def get_past_entries(limit: int = 200, user_id: str | None = None) -> list
             "suggestion": str(item.get("suggestion") or ""),
             "warning": item.get("warning"),
             "predicted_mood": float(item.get("predicted_mood") or 0.0),
+            "shared_with_therapist": bool(item.get("shared_with_therapist", False)),
             "created_at": item.get("created_at"),
         }
         for item in source
@@ -429,7 +433,10 @@ async def get_patient_entries_for_therapist(therapist_id: str, patient_id: str, 
 
     db = get_database()
     docs = await db.checkins.find(
-        {"user_id": patient_id},
+        {
+            "user_id": patient_id,
+            "shared_with_therapist": True,  # NEW: only shared entries
+        },
         {
             "created_at": 1,
             "reflection": 1,
@@ -456,6 +463,7 @@ async def get_patient_trend_for_therapist(therapist_id: str, patient_id: str, li
         {
             "user_id": patient_id,
             "sentiment_label": {"$in": ["positive", "negative", "neutral"]},
+            "shared_with_therapist": True,  # NEW: only shared entries
         },
         {
             "created_at": 1,
@@ -474,3 +482,26 @@ async def get_patient_trend_for_therapist(therapist_id: str, patient_id: str, li
         }
         for doc in docs
     ]
+
+
+async def toggle_entry_sharing(entry_id: str, user_id: str, shared: bool) -> dict:
+    """Toggle shared_with_therapist for a single entry. Patient-only."""
+    db = get_database()
+    if db is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database required to toggle sharing",
+        )
+
+    result = await db.checkins.update_one(
+        {"_id": entry_id, "user_id": user_id},
+        {"$set": {"shared_with_therapist": shared}},
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Entry not found or you don't own it",
+        )
+
+    return {"entry_id": entry_id, "shared_with_therapist": shared}

@@ -10,6 +10,10 @@ class CheckinRequest(BaseModel):
         max_length=5000,
         description="Optional free-text reflection about how you feel",
     )
+    shared_with_therapist: bool = Field(
+        default=False,
+        description="Whether to share this entry with linked therapists",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -17,6 +21,7 @@ class CheckinRequest(BaseModel):
                 {
                     "mood": 4,
                     "reflection": "Had a productive day and enjoyed a walk outside.",
+                    "shared_with_therapist": False,
                 }
             ]
         }
@@ -52,6 +57,7 @@ class CheckinResponse(BaseModel):
     analysis_retry_pending: bool = False
     warning: str | None = None
     predicted_mood: float | None = None
+    shared_with_therapist: bool = False  # NEW field
     created_at: datetime
 
 class ChartDataset(BaseModel):
@@ -110,6 +116,7 @@ class PastEntryResponse(BaseModel):
     confidence: float
     suggestion: str
     predicted_mood: float
+    shared_with_therapist: bool  # NEW field
     created_at: datetime
 
 
@@ -156,3 +163,42 @@ class TherapistPatientTrendPoint(BaseModel):
 
 class TherapistPatientTrendResponse(BaseModel):
     points: list[TherapistPatientTrendPoint]
+
+
+# ── Sharing settings schemas ─────────────────────────────────────────────────
+
+class SharingStatusResponse(BaseModel):
+    """Global sharing toggle state for the authenticated patient."""
+    patient_id: str
+    sharing_enabled: bool
+
+
+class SharingToggleRequest(BaseModel):
+    """Request body for PATCH /api/sharing/enabled."""
+    sharing_enabled: bool
+
+
+class TherapistLinkRequest(BaseModel):
+    """Request body for POST /api/sharing/link."""
+    therapist_id: str
+
+
+class TherapistLinkInfo(BaseModel):
+    """One entry in the patient's therapist link list."""
+    therapist_id: str
+    active: bool
+    linked_at: Optional[datetime] = None
+    sharing_enabled: bool
+
+
+class TherapistLinksResponse(BaseModel):
+    """All therapist links for the authenticated patient."""
+    links: list[TherapistLinkInfo]
+    sharing_enabled: bool
+
+
+# ── Per-entry sharing toggle ─────────────────────────────────────────────────
+
+class EntryShareToggleRequest(BaseModel):
+    """Request body for PATCH /api/checkins/{id}/sharing."""
+    shared_with_therapist: bool

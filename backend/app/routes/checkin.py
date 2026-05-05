@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Response, status
 
 from app.auth import AuthUser, get_current_user, require_patient
-from app.schemas.checkin import CheckinRequest, CheckinResponse, SentimentCount, SentimentSummaryResponse
+from app.schemas.checkin import CheckinRequest, CheckinResponse, SentimentCount, SentimentSummaryResponse, EntryShareToggleRequest
 from app.services.checkin import create_checkin, get_checkins_by_user, get_sentiment_summary
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ async def submit_checkin(
         mood=checkin.mood,
         user_id=user.user_id,
         reflection=checkin.reflection,
+        shared_with_therapist=checkin.shared_with_therapist,
     )
 
     if doc.get("warning"):
@@ -51,6 +52,7 @@ async def submit_checkin(
         suggestion=doc.get("suggestion"),
         warning=doc.get("warning"),
         predicted_mood=doc.get("predicted_mood"),
+        shared_with_therapist=doc.get("shared_with_therapist", False),
         created_at=doc["created_at"],
     )
 
@@ -80,7 +82,22 @@ async def list_checkins(user: AuthUser = Depends(get_current_user)):
             suggestion=doc.get("suggestion"),
             warning=doc.get("warning"),
             predicted_mood=doc.get("predicted_mood"),
+            shared_with_therapist=doc.get("shared_with_therapist", False),
             created_at=doc["created_at"],
         )
         for doc in docs
     ]
+
+@router.patch(
+    "/checkins/{entry_id}/sharing",
+    summary="Toggle sharing for a specific entry",
+)
+async def toggle_entry_sharing_endpoint(
+    entry_id: str,
+    body: EntryShareToggleRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    from app.services.checkin import toggle_entry_sharing
+    await require_patient(user)
+    result = await toggle_entry_sharing(entry_id, user.user_id, body.shared_with_therapist)
+    return result

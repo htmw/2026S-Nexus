@@ -2,21 +2,25 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./JournalEntryCard.css";
 import { checkinAPI } from "../services/api";
 import { showNotice } from "../services/notifications";
+import { toast } from "react-hot-toast";
+
 
 const STORAGE_KEY = "mindmirror:draft";
 
 const MOODS = [
-  { key: "awful",  label: "Awful", emoji: "😢" },
-  { key: "bad",   label: "Bad",   emoji: "🙁" },
-  { key: "meh",   label: "Meh",   emoji: "😐" },
-  { key: "good",  label: "Good",  emoji: "😄" },
-  { key: "great", label: "Great", emoji: "🤩" },
+  { key: "awful", label: "Awful", emoji: "😢"},
+  { key: "bad", label: "Bad", emoji: "🙁"},
+  { key: "meh", label: "Meh", emoji: "😐"},
+  { key: "good", label: "Good", emoji: "😄"},
+  { key: "great", label: "Great", emoji: "🤩"},
 ];
 
 function estimateMood(text, selectedMoodKey) {
   if (selectedMoodKey) {
     const idx = MOODS.findIndex((m) => m.key === selectedMoodKey);
-    if (idx !== -1) return { label: MOODS[idx].label, index: idx + 1 };
+    if (idx !== -1) {
+      return { label: MOODS[idx].label, index: idx + 1 };
+    }
   }
   return { label: "Neutral", index: 3 };
 }
@@ -46,61 +50,99 @@ function SuggestionCard({ suggestion, onDismiss }) {
   );
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
 export default function JournalEntryCard({
-  title       = "How are you feeling today?",
-  subtitle    = "Take a moment to reflect. No format needed — just write naturally.",
+  title = "How are you feeling today?",
+  subtitle = "Take a moment to reflect. No format needed — just write naturally.",
   placeholder = "What's on your mind today? How did your day go?",
   maxChars = 5000,
   onSubmitted,
 }) 
 {
   const [text, setText] = useState("");
-  
   const [selectedMoodKey, setSelectedMoodKey] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestion, setSuggestion]     = useState(null); // holds suggestion after submit
+  const [shareWithTherapist, setShareWithTherapist] = useState(false); // NEW
 
   const [draftState, setDraftState] = useState({
     loaded: false,
     isDirty: false,
     lastSavedAt: null,
   });
+
+  const onSubmitEntry = async (entry) => {
+    try {
+      await checkinAPI.create({
+        mood: entry.mood,
+        reflection: entry.text || null,
+        shared_with_therapist: entry.shared_with_therapist, // NEW
+      });
+      toast.success("Entry submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting entry:", error);
+      toast.error("Failed to submit entry. Please try again.");
+    }
+  }
+
   // Load draft once
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed.text === "string")    setText(parsed.text);
+        if (typeof parsed.text === "string") setText(parsed.text);
         if (typeof parsed.moodKey === "string") setSelectedMoodKey(parsed.moodKey);
+        if (typeof parsed.shareWithTherapist === "boolean") setShareWithTherapist(parsed.shareWithTherapist);
       }
-    } catch { /* ignore */ } finally {
+    } catch {
+      // ignore
+    } finally {
       setDraftState((s) => ({ ...s, loaded: true, isDirty: false }));
     }
   }, []);
 
-  // Auto-save draft (debounced)
+  // Auto-save draft (debounced-ish)
   useEffect(() => {
     if (!draftState.loaded) return;
+
     setDraftState((s) => ({ ...s, isDirty: true }));
+
     const id = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, moodKey: selectedMoodKey }));
-        setDraftState((s) => ({ ...s, isDirty: false, lastSavedAt: Date.now() }));
-      } catch { /* ignore */ }
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ text, moodKey: selectedMoodKey, shareWithTherapist })
+        );
+        setDraftState((s) => ({
+          ...s,
+          isDirty: false,
+          lastSavedAt: Date.now(),
+        }));
+      } catch {
+        // ignore
+      }
     }, 400);
-    return () => clearTimeout(id);
-  }, [text, selectedMoodKey, draftState.loaded]);
 
-  const estimatedMood = useMemo(() => estimateMood(text, selectedMoodKey), [text, selectedMoodKey]);
-  const charCount  = text.length;
-  const canSubmit  = text.trim().length > 0;
+    return () => clearTimeout(id);
+  }, [text, selectedMoodKey, shareWithTherapist, draftState.loaded]);
+
+  const estimatedMood = useMemo(
+    () => estimateMood(text, selectedMoodKey),
+    [text, selectedMoodKey]
+  );
+
+  const charCount = text.length;
+  const canSubmit = text.trim().length > 0;
 
   function handleClear() {
     setText("");
     setSelectedMoodKey(null);
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    setShareWithTherapist(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setDraftState((s) => ({ ...s, isDirty: false, lastSavedAt: null }));
   }
 
@@ -166,78 +208,108 @@ export default function JournalEntryCard({
           onDismiss={() => setSuggestion(null)}
         />
       )}
+    <section className="mm-entry">
+      <div className="mm-entry__inner">
+        <div className="mm-card">
+          <div className="mm-card__header">
+            <h2 className="mm-card__title">{title}</h2>
+            <p className="mm-card__subtitle">{subtitle}</p>
+          </div>
 
-      <section className="mm-entry">
-        <div className="mm-entry__inner">
-          <div className="mm-card">
-            <div className="mm-card__header">
-              <h2 className="mm-card__title">{title}</h2>
-              <p className="mm-card__subtitle">{subtitle}</p>
-            </div>
+          <textarea
+            className="mm-textarea"
+            placeholder={placeholder}
+            value={text}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (next.length <= maxChars) {
+                setText(next);
+              }
+            }}
+          />
 
-            <textarea
-              className="mm-textarea"
-              placeholder={placeholder}
-              value={text}
-              onChange={(e) => {
-                const next = e.target.value;
-                if (next.length <= maxChars) setText(next);
-              }}
-            />
-
-            <div className="mm-entry__footer">
-              {/* Emoji row + estimated mood */}
-              <div className="mm-entry__left">
-                <div className="mm-emojiRow" role="group" aria-label="Select mood">
-                  {MOODS.map((m) => {
-                    const isActive = selectedMoodKey === m.key;
-                    return (
-                      <button
-                        key={m.key}
-                        type="button"
-                        className={`mm-emojiBtn ${isActive ? "is-active" : ""}`}
-                        onClick={() => setSelectedMoodKey((cur) => (cur === m.key ? null : m.key))}
-                        aria-pressed={isActive}
-                        title={m.label}
-                      >
-                        <span className="mm-emojiBtn__emoji" aria-hidden="true">{m.emoji}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mm-estimated">
-                  Estimated mood: <span className="mm-estimated__value">{estimatedMood.label}</span>
-                </div>
+          <div className="mm-entry__footer">
+            {/* Emoji row + estimated mood */}
+            <div className="mm-entry__left">
+              <div className="mm-emojiRow" role="group" aria-label="Select mood">
+                {MOODS.map((m) => {
+                  const isActive = selectedMoodKey === m.key;
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className={`mm-emojiBtn ${isActive ? "is-active" : ""}`}
+                      onClick={() =>
+                        setSelectedMoodKey((cur) => (cur === m.key ? null : m.key))
+                      }
+                      aria-pressed={isActive}
+                      title={m.label}
+                    >
+                      <span className="mm-emojiBtn__emoji" aria-hidden="true">
+                        {m.emoji}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Draft status + char count + actions */}
-              <div className="mm-entry__right">
-                <div className="mm-metaRow">
-                  <span className="mm-metaRow__spacer" aria-hidden="true" />
-                  <span className="mm-draft">
+              <div className="mm-estimated">
+                Estimated mood: <span className="mm-estimated__value">{estimatedMood.label}</span>
+              </div>
+            </div>
+
+            {/* Draft status + char count + actions */}
+            <div className="mm-entry__right">
+              <div className="mm-metaRow">
+                <span className="mm-metaRow__spacer" aria-hidden="true" />
+                <span className="mm-draft">
                     {draftState.lastSavedAt
-                      ? draftState.isDirty ? "Saving…" : "Draft saved"
-                      : "Draft not saved yet"}
-                  </span>
-                  <span className="mm-chars">{charCount} / {maxChars} characters</span>
+                    ? draftState.isDirty
+                        ? "Saving…"
+                        : "Draft saved"
+                    : "Draft not saved yet"}
+                </span>
+                <span className="mm-chars">
+                  {charCount} / {maxChars} characters
+                </span>
                 </div>
 
-                <div className="mm-actionsRow">
-                  <button type="button" className="mm-clear" onClick={handleClear}>
-                    Clear draft
-                  </button>
+              <div className="mm-actionsRow">
+                <button type="button" className="mm-clear" onClick={handleClear}>
+                  Clear draft
+                </button>
 
-                  <button
-                    type="button"
-                    className={`mm-submit ${canSubmit ? "" : "is-disabled"} ${isSubmitting ? "is-loading" : ""}`}
-                    onClick={handleSubmit}
-                    disabled={!canSubmit || isSubmitting}
-                    aria-label={isSubmitting ? "Submitting entry…" : "Submit Entry"}
-                  >
-                    <span className="mm-submit__content">
-                      <span className="mm-submit__label">Submit Entry</span>
-                      <span className="mm-submit__morph" aria-hidden="true">
-                        <svg className="mm-submit__writing" viewBox="-2 -1 36 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* NEW: Toggle button for sharing */}
+                <button
+                  type="button"
+                  className={`mm-share-toggle ${shareWithTherapist ? "is-on" : ""}`}
+                  onClick={() => setShareWithTherapist((prev) => !prev)}
+                  aria-label={shareWithTherapist ? "Sharing with therapist" : "Not sharing with therapist"}
+                  title={shareWithTherapist ? "Click to stop sharing this entry" : "Click to share this entry with your therapist"}
+                >
+                  <span className="mm-share-toggle__track">
+                    <span className="mm-share-toggle__thumb" />
+                  </span>
+                  <span className="mm-share-toggle__label">
+                    {shareWithTherapist ? "Sharing" : "Not sharing"}
+                  </span>
+                </button>
+                
+
+                <button
+                  type="button"
+                  className={`mm-submit ${canSubmit ? "" : "is-disabled"} ${isSubmitting ? "is-loading" : ""}`}
+                  onClick={handleSubmit}
+                  disabled={!canSubmit || isSubmitting}
+                  aria-label={isSubmitting ? "Submitting entry…" : "Submit Entry"}
+                >
+                  <span className="mm-submit__content">
+                    {/* Default label */}
+                    <span className="mm-submit__label">Submit Entry</span>
+
+                    {/* Unified journal+pen SVG — pen tip tracks along each line */}
+                    <span className="mm-submit__morph" aria-hidden="true">
+                      <svg className="mm-submit__writing" viewBox="-2 -1 36 38" fill="none" xmlns="http://www.w3.org/2000/svg">
                         {/* Journal body */}
                         <rect x="1" y="1" width="26" height="34" rx="3" fill="white" fillOpacity="0.15" stroke="white" strokeWidth="1.5"/>
                         {/* Spine */}
@@ -273,15 +345,16 @@ export default function JournalEntryCard({
                           <circle cx="0" cy="0" r="1" fill="white" fillOpacity="0.95"/>
                         </g>
                       </svg>
-                      </span>
                     </span>
-                  </button>
-                </div>
+                  </span>
+                </button>
               </div>
+
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
     </>
   );
 }

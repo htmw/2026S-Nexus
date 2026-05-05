@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
     setToken(tokenStr);
     setUser(userObj);
     localStorage.setItem("mindmirror:userId", userObj?.id || "patient-demo-1");
-    localStorage.setItem("mindmirror:role", "patient");
+    localStorage.setItem("mindmirror:role", userObj.role || "patient");
   }, []);
 
   const logout = useCallback(() => {

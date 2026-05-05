@@ -53,6 +53,15 @@ export const checkinAPI = {
   list: () => api.get("/checkins"),
   summary: () => api.get("/sentiment-summary"),
   history: () => api.get("/mood/history"),
+  toggleSharing: (entryId, shared) =>
+    api.patch(`/checkins/${entryId}/sharing`, { shared_with_therapist: shared }),
+};
+
+export const sharingAPI = {
+  getStatus:  ()         => api.get("/sharing/status"),
+  setEnabled: (enabled)  => api.patch("/sharing/enabled", { sharing_enabled: enabled }),
+  link:       (id)       => api.post("/sharing/link", { therapist_id: id }),
+  unlink:     (id)       => api.delete(`/sharing/link/${id}`),
 };
 
 export const dashboardAPI = {

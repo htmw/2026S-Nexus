@@ -2,27 +2,30 @@ import React from "react";
 import "./Navbar.css";
 import logo from "../assets/logo3.png";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/Authcontext"
+import { useAuth } from "../context/Authcontext";
 
 export default function Navbar({
   onToggleTheme = () => {},
   variant = "full",
 }) {
-  const { user, logout} = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
   }
 
   const role = localStorage.getItem("mindmirror:role") || "patient";
+  
   const tabs =
     role === "therapist"
-      ? [{ label: "Therapist Dashboard", to: "/therapist" }]
+      ? [{ label: "My Patients", to: "/therapist/dashboard" }]  // Fixed route
       : [
           { label: "Journal", to: "/journal" },
           { label: "Insights", to: "/insights" },
           { label: "Past Entries", to: "/past-entries" },
+          { label: "Settings", to: "/settings" },
         ];
 
   return (

@@ -34,13 +34,21 @@ export default function Login() {
     try {
       const res = await authAPI.login({ email, password });
       const { access_token, user } = res.data;
+      console.log(user.role);
       login(access_token, user);
+ 
+      // ── Store role for navbar/redirect logic ─────────────────────────────
+      localStorage.setItem("mindmirror:role", user.role);
+ 
       toast.success(`Welcome back, ${user.name}!`);
-      navigate("/journal", { replace: true });
+ 
+      // ── Role-based redirect ──────────────────────────────────────────────
+      const target = user.role === "therapist" ? "/therapist/dashboard" : "/journal";
+      navigate(target, { replace: true });
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
-
+ 
       if (status === 401) {
         setBanner("Invalid email or password. Please try again.");
       } else if (status === 403) {

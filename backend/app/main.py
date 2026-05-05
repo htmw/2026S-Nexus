@@ -20,6 +20,7 @@ from app.routes.auth import router as auth_router
 from app.routes.checkin import router as checkin_router
 from app.routes.insight import router as insight_router
 from app.routes.mood import router as mood_router
+from app.routes.sharing import router as sharing_router          
 from app.routes.therapist import router as therapist_router
 from app.services.nlp import load_models
 
@@ -39,7 +40,6 @@ async def lifespan(app: FastAPI):
     logger.info("MindMirror API ready")
     yield
 
-    #shutdown
     await close_mongo_connection()
     logger.info("MindMirror API shut down")
 
@@ -70,6 +70,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(checkin_router, prefix="/api")
 app.include_router(insight_router, prefix="/api")
 app.include_router(mood_router, prefix="/api")
+app.include_router(sharing_router, prefix="/api")               # ← NEW
 app.include_router(therapist_router, prefix="/api")
 
 

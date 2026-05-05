@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = 60 * 24  # 24 hours
     GROQ_API_KEY: str = ""  # Set in .env — leave empty to disable Groq
 
+    # Secret key required in X-Admin-Key header to create therapist accounts.
+    # Set a strong random value in .env — leave empty to disable the endpoint.
+    ADMIN_API_KEY: str = ""
+
     model_config = {
         "env_file": ".env",
         "extra": "ignore",
