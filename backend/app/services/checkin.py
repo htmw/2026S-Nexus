@@ -486,6 +486,9 @@ async def get_patient_trend_for_therapist(therapist_id: str, patient_id: str, li
 
 async def toggle_entry_sharing(entry_id: str, user_id: str, shared: bool) -> dict:
     """Toggle shared_with_therapist for a single entry. Patient-only."""
+    from bson import ObjectId
+    from bson.errors import InvalidId
+
     db = get_database()
     if db is None:
         raise HTTPException(
@@ -493,12 +496,25 @@ async def toggle_entry_sharing(entry_id: str, user_id: str, shared: bool) -> dic
             detail="Database required to toggle sharing",
         )
 
-    result = await db.checkins.update_one(
-        {"_id": entry_id, "user_id": user_id},
-        {"$set": {"shared_with_therapist": shared}},
-    )
+    # Try ObjectId first (most common case for MongoDB-generated IDs).
+    # Fall back to plain string for entries inserted with string IDs.
+    candidates = []
+    try:
+        candidates.append(ObjectId(entry_id))
+    except (InvalidId, TypeError):
+        pass
+    candidates.append(entry_id)  # also try as string
 
-    if result.matched_count == 0:
+    result = None
+    for candidate in candidates:
+        result = await db.checkins.update_one(
+            {"_id": candidate, "user_id": user_id},
+            {"$set": {"shared_with_therapist": shared}},
+        )
+        if result.matched_count > 0:
+            break
+
+    if not result or result.matched_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Entry not found or you don't own it",
