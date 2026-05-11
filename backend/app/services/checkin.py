@@ -386,13 +386,45 @@ async def get_patient_profile_for_therapist(therapist_id: str, patient_id: str) 
 
     db = get_database()
     profile = await db.patient_profiles.find_one({"patient_id": patient_id}) or {}
+    basics = await _fetch_user_basics(db, patient_id)
     return {
         "patient_id": patient_id,
-        "name": str(profile.get("name", "Unknown Patient")),
-        "email": str(profile.get("email", "unknown@example.com")),
+        "name": basics["name"],
+        "email": basics["email"],
         "sharing_enabled": bool(profile.get("sharing_enabled", True)),
     }
 
+async def _fetch_user_basics(db, patient_id: str) -> dict:
+    """
+    Return {name, email} for a patient, preferring the users collection
+    (source of truth) and falling back to patient_profiles, then sensible defaults.
+    Handles both ObjectId and string _id formats.
+    """
+    from bson import ObjectId
+    from bson.errors import InvalidId
+
+    user = None
+    # Try ObjectId first (the normal case for MongoDB-generated IDs)
+    try:
+        user = await db.users.find_one({"_id": ObjectId(patient_id)})
+    except (InvalidId, TypeError):
+        pass
+    # Fall back to a plain-string _id
+    if user is None:
+        user = await db.users.find_one({"_id": patient_id})
+
+    if user:
+        return {
+            "name": str(user.get("name") or "").strip() or "Unknown Patient",
+            "email": str(user.get("email") or "").strip() or "unknown@example.com",
+        }
+
+    # Last resort: patient_profiles (may have been seeded earlier)
+    profile = await db.patient_profiles.find_one({"patient_id": patient_id}) or {}
+    return {
+        "name": str(profile.get("name") or "").strip() or "Unknown Patient",
+        "email": str(profile.get("email") or "").strip() or "unknown@example.com",
+    }
 
 async def get_linked_patients_for_therapist(therapist_id: str, limit: int = 100) -> list[dict]:
     db = get_database()
@@ -415,12 +447,15 @@ async def get_linked_patients_for_therapist(therapist_id: str, limit: int = 100)
         patient_id = str(link.get("patient_id", "")).strip()
         if not patient_id:
             continue
+
+        basics = await _fetch_user_basics(db, patient_id)
         profile = await db.patient_profiles.find_one({"patient_id": patient_id}) or {}
+
         patients.append(
             {
                 "patient_id": patient_id,
-                "name": str(profile.get("name", "Unknown Patient")),
-                "email": str(profile.get("email", "unknown@example.com")),
+                "name": basics["name"],
+                "email": basics["email"],
                 "sharing_enabled": bool(profile.get("sharing_enabled", False)),
             }
         )

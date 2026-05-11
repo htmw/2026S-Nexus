@@ -12,7 +12,6 @@
 }
 
 /* ── Back link ─────────────────────────────────────────────────────────────── */
-
 .pv-back {
   display: inline-flex;
   align-items: center;
@@ -35,7 +34,6 @@
 }
 
 /* ── Patient header card ───────────────────────────────────────────────────── */
-
 .pv-header {
   display: flex;
   align-items: center;
@@ -147,7 +145,6 @@
 }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────────── */
-
 .pv-tabs {
   display: flex;
   gap: 4px;
@@ -175,9 +172,7 @@
   transition: all 180ms ease;
 }
 
-.pv-tab:hover {
-  color: #2f2f2f;
-}
+.pv-tab:hover { color: #2f2f2f; }
 
 .pv-tab.is-active {
   background: #ffffff;
@@ -202,7 +197,6 @@
 }
 
 /* ── Journal tab ───────────────────────────────────────────────────────────── */
-
 .pv-journal {
   display: flex;
   flex-direction: column;
@@ -270,14 +264,13 @@
 }
 
 /* ── Mood tab ──────────────────────────────────────────────────────────────── */
-
 .pv-mood {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-/* Sentiment summary stat cards */
+/* Sentiment summary cards */
 .pv-moodSummary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -349,118 +342,85 @@
   transition: width 400ms ease;
 }
 
-/* Chart card */
+/* ── Chart card — matches Insights aesthetic ───────────────────────────────── */
 .pv-chartCard {
   border-radius: 18px;
   background: #fbf4ee;
   border: 1px solid rgba(0, 0, 0, 0.10);
-  padding: 20px 22px;
+  padding: 22px 24px;
 }
 
 .pv-chartCard__head {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .pv-chartCard__title {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 16px;
+  margin: 0 0 4px;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 20px;
   font-weight: 700;
   color: #2f2f2f;
-  margin-bottom: 4px;
+  letter-spacing: -0.2px;
 }
 
 .pv-chartCard__sub {
+  margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: #6f7a80;
 }
 
 .pv-chartCard__svgWrap {
+  width: 100%;
   background: rgba(255, 255, 255, 0.80);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
-  padding: 12px 8px;
+  border-radius: 14px;
+  padding: 12px;
+  overflow: hidden;
 }
 
 .pv-chartSvg {
   display: block;
   width: 100%;
-  height: 220px;
+  height: auto;
 }
 
-/* Detailed timeline list */
-.pv-trendList {
-  border-radius: 18px;
-  background: #fbf4ee;
-  border: 1px solid rgba(0, 0, 0, 0.10);
-  padding: 20px 22px;
+/* Chart legend */
+.pv-chartLegend {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.pv-trendList__title {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #2f2f2f;
-  margin-bottom: 6px;
-}
-
-.pv-trendRow {
-  display: grid;
-  grid-template-columns: 160px auto 1fr 50px;
-  gap: 14px;
   align-items: center;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.70);
-  border-radius: 10px;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.60);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  width: max-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.pv-trendRow__date {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #4f5a61;
-  white-space: nowrap;
-}
-
-.pv-trendRow__pill {
+.pv-chartLegend__item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.pv-trendRow__bar {
-  height: 6px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.pv-trendRow__barFill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 400ms ease;
-}
-
-.pv-trendRow__conf {
+  gap: 7px;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 12px;
   font-weight: 700;
-  color: #6f7a80;
-  text-align: right;
+  color: #4f5a61;
+  letter-spacing: 0.3px;
+}
+
+.pv-chartLegend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 /* ── Empty / blocked / skeleton ────────────────────────────────────────────── */
-
 .pv-empty {
   text-align: center;
   padding: 56px 28px;
@@ -566,17 +526,11 @@
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
-
 @media (max-width: 720px) {
   .pv-header { flex-direction: column; align-items: flex-start; }
   .pv-header__right { align-items: flex-start; }
   .pv-moodSummary { grid-template-columns: 1fr; }
-  .pv-trendRow {
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-  }
-  .pv-trendRow__bar,
-  .pv-trendRow__conf { display: none; }
   .pv-tabs { width: 100%; }
   .pv-tab { flex: 1; justify-content: center; }
+  .pv-chartCard { padding: 16px; }
 }
