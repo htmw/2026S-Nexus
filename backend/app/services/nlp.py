@@ -13,6 +13,11 @@ _suggestion_pipeline = None
 
 # ── Hugging Face custom trained mood model ──────────────────────────────────
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+try:
+    load_huggingface_model()
+    print("MODEL LOADED SUCCESSFULLY")
+except Exception as e:
+    print("MODEL FAILED:", e)
 
 MODEL_NAME = "krishna6699/MindMirrorRegression"
 
