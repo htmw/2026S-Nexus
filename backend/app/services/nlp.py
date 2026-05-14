@@ -14,7 +14,7 @@ _suggestion_pipeline = None
 # ── Hugging Face custom trained mood model ──────────────────────────────────
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-MODEL_NAME = "krishna6699/MindMirrorRegression"
+MODEL_NAME = "krishna6699/MoodRegression2"
 
 tokenizer = None
 model = None
