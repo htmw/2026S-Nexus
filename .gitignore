@@ -9,3 +9,6 @@ frontend/node_modules/
 
 #Mac
 .DS_Store
+
+backend/app/services/mood_model/
+*.safetensors
