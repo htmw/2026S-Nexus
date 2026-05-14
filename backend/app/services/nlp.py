@@ -13,11 +13,6 @@ _suggestion_pipeline = None
 
 # ── Hugging Face custom trained mood model ──────────────────────────────────
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-try:
-    load_huggingface_model()
-    print("MODEL LOADED SUCCESSFULLY")
-except Exception as e:
-    print("MODEL FAILED:", e)
 
 MODEL_NAME = "krishna6699/MindMirrorRegression"
 
@@ -32,17 +27,22 @@ def load_huggingface_model():
 
     logger.info("Loading custom Hugging Face model...")
 
+    hf_token = os.getenv("HUGGINGFACE_TOKEN")
+
+    print("HF TOKEN EXISTS:", hf_token is not None)
+
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_NAME
+        MODEL_NAME,
+        token=hf_token
     )
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME
+        MODEL_NAME,
+        token=hf_token
     )
 
     logger.info("Custom model loaded successfully")
-
-def load_models() -> None:
+    def load_models() -> None:
     """
     Load NLP models once at startup (sentiment + emotion + optional suggestion generator).
     Subsequent calls are no-ops to guarantee single-load.
