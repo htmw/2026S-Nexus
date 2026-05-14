@@ -11,10 +11,8 @@ _sentiment_pipeline = None
 _emotion_pipeline = None
 _suggestion_pipeline = None
 
-# ── Path to your custom trained mood model ──────────────────────────────────
-# Place your model.safetensors, config.json, tokenizer.json, and
-# tokenizer_config.json all together in this folder.
-_CUSTOM_MODEL_DIR = os.path.join(os.path.dirname(__file__), "mood_model")
+# ── Hugging Face custom trained mood model ──────────────────────────────────
+_CUSTOM_MODEL_REPO = "krishna6699/MindMirrorRegression"
 
 
 def load_models() -> None:
@@ -36,31 +34,43 @@ def load_models() -> None:
 
     # ── Sentiment model ──────────────────────────────────────────────────────
     if _sentiment_pipeline is None:
-        custom_weights = os.path.join(_CUSTOM_MODEL_DIR, "model.safetensors")
-        if os.path.isfile(custom_weights):
-            logger.info("Loading custom trained mood model from %s ...", _CUSTOM_MODEL_DIR)
-            try:
-                _sentiment_pipeline = pipeline(
-                    "text-classification",   # regression is still text-classification
-                    model=_CUSTOM_MODEL_DIR,
-                    tokenizer=_CUSTOM_MODEL_DIR,
-                    function_to_apply="none",  # raw logit — no softmax/sigmoid
-                    device=-1,               # CPU
-                )
-                logger.info("Custom mood model loaded successfully")
-            except Exception as e:
-                logger.warning(
-                    "Failed to load custom model (%s). Falling back to SST-2.", e
-                )
-                _sentiment_pipeline = None
 
-        if _sentiment_pipeline is None:
-            logger.info("Loading fallback DistilBERT SST-2 sentiment model...")
-            _sentiment_pipeline = pipeline(
-                "sentiment-analysis",
-                model="distilbert-base-uncased-finetuned-sst-2-english",
-            )
-            logger.info("Fallback sentiment model loaded")
+    logger.info(
+        "Loading custom trained mood model from Hugging Face: %s ...",
+        _CUSTOM_MODEL_REPO,
+    )
+
+    try:
+        _sentiment_pipeline = pipeline(
+            "text-classification",
+            model=_CUSTOM_MODEL_REPO,
+            tokenizer=_CUSTOM_MODEL_REPO,
+            function_to_apply="none",
+            device=-1,
+        )
+
+        logger.info("Custom mood model loaded successfully")
+
+    except Exception as e:
+
+        logger.warning(
+            "Failed to load custom Hugging Face model (%s). Falling back to SST-2.",
+            e,
+        )
+
+        _sentiment_pipeline = None
+
+    if _sentiment_pipeline is None:
+
+        logger.info("Loading fallback DistilBERT SST-2 sentiment model...")
+
+        _sentiment_pipeline = pipeline(
+            "sentiment-analysis",
+            model="distilbert-base-uncased-finetuned-sst-2-english",
+            device=-1,
+        )
+
+        logger.info("Fallback sentiment model loaded")
 
     # ── Emotion model ────────────────────────────────────────────────────────
     if _emotion_pipeline is None:
@@ -117,7 +127,7 @@ def _is_custom_model() -> bool:
         return False
     try:
         model_path = _sentiment_pipeline.model.config._name_or_path
-        return "mood_model" in model_path or os.path.isabs(model_path)
+        return "MindMirrorRegression" in model_path
     except Exception:
         return False
 
