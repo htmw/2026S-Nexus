@@ -12,7 +12,19 @@ _emotion_pipeline = None
 _suggestion_pipeline = None
 
 # ── Hugging Face custom trained mood model ──────────────────────────────────
-_CUSTOM_MODEL_REPO = "krishna6699/MindMirrorRegression"
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+MODEL_NAME = "krishna6699/MindMirrorRegression"
+
+tokenizer = AutoTokenizer.from_pretrained(
+    MODEL_NAME,
+    token=os.getenv("HUGGINGFACE_TOKEN")
+)
+
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_NAME,
+    token=os.getenv("HUGGINGFACE_TOKEN")
+)
 
 
 def load_models() -> None:
