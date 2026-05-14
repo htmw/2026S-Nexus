@@ -18,6 +18,7 @@ MODEL_NAME = "krishna6699/MindMirrorRegression"
 
 tokenizer = None
 model = None
+
 def load_huggingface_model():
     global tokenizer, model
 
@@ -27,13 +28,11 @@ def load_huggingface_model():
     logger.info("Loading custom Hugging Face model...")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_NAME,
-        token=os.getenv("HUGGINGFACE_TOKEN")
+        MODEL_NAME
     )
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME,
-        token=os.getenv("HUGGINGFACE_TOKEN")
+        MODEL_NAME
     )
 
     logger.info("Custom model loaded successfully")
