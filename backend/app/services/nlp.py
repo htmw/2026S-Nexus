@@ -16,16 +16,27 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 MODEL_NAME = "krishna6699/MindMirrorRegression"
 
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_NAME,
-    token=os.getenv("HUGGINGFACE_TOKEN")
-)
+tokenizer = None
+model = None
+def load_huggingface_model():
+    global tokenizer, model
 
-model = AutoModelForSequenceClassification.from_pretrained(
-    MODEL_NAME,
-    token=os.getenv("HUGGINGFACE_TOKEN")
-)
+    if tokenizer is not None and model is not None:
+        return
 
+    logger.info("Loading custom Hugging Face model...")
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        MODEL_NAME,
+        token=os.getenv("HUGGINGFACE_TOKEN")
+    )
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_NAME,
+        token=os.getenv("HUGGINGFACE_TOKEN")
+    )
+
+    logger.info("Custom model loaded successfully")
 
 def load_models() -> None:
     """
@@ -45,21 +56,14 @@ def load_models() -> None:
     start = time.perf_counter()
 
     # ── Sentiment model ──────────────────────────────────────────────────────
-    if _sentiment_pipeline is None:
-        logger.info(
-        "Loading custom trained mood model from Hugging Face: %s ...",
-        _CUSTOM_MODEL_REPO,
-        )
-
-    try:
+    try:    
+        load_huggingface_model()
         _sentiment_pipeline = pipeline(
-            "text-classification",
-            model=_CUSTOM_MODEL_REPO,
-            tokenizer=_CUSTOM_MODEL_REPO,
-            function_to_apply="none",
-            device=-1,
+        "text-classification",
+        model=model,
+        tokenizer=tokenizer,
+        device=-1,
         )
-
         logger.info("Custom mood model loaded successfully")
 
     except Exception as e:
@@ -90,6 +94,7 @@ def load_models() -> None:
             "text-classification",
             model="j-hartmann/emotion-english-distilroberta-base",
             top_k=1,
+            device=-1,
         )
         logger.info("Emotion model loaded")
 
@@ -99,7 +104,7 @@ def load_models() -> None:
             logger.info("Loading suggestion generation model (FLAN-T5 base)...")
             _suggestion_pipeline = pipeline(
                 "text2text-generation",
-                model="google/flan-t5-base",
+                model="google/flan-t5-small",
             )
             logger.info("Suggestion model loaded — dynamic AI suggestions enabled")
         except Exception as e:
@@ -169,7 +174,7 @@ def analyze_sentiment(text: str) -> dict:
             - normalized_score: float 0.0–5.0 (mapped to mood scale)
     """
     if _sentiment_pipeline is None:
-        raise RuntimeError("NLP model not loaded. Call load_model() first.")
+        load_models()
 
     result = _sentiment_pipeline(text, truncation=True, max_length=512)[0]
 
