@@ -42,6 +42,7 @@ def load_huggingface_model():
     )
 
     logger.info("Custom model loaded successfully")
+    
     def load_models() -> None:
     """
     Load NLP models once at startup (sentiment + emotion + optional suggestion generator).
