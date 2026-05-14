@@ -43,14 +43,14 @@ def load_huggingface_model():
 
     logger.info("Custom model loaded successfully")
     
-    def load_models() -> None:
+def load_models() -> None:
     """
     Load NLP models once at startup (sentiment + emotion + optional suggestion generator).
     Subsequent calls are no-ops to guarantee single-load.
 
     Sentiment model priority:
-      1. Custom local model at ./mood_model  (your trained regression model)
-      2. Fallback: distilbert-base-uncased-finetuned-sst-2-english  (HuggingFace)
+    1. Custom local model at ./mood_model  (your trained regression model)
+    2. Fallback: distilbert-base-uncased-finetuned-sst-2-english  (HuggingFace)
     """
     global _sentiment_pipeline, _emotion_pipeline, _suggestion_pipeline
 
