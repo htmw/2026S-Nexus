@@ -34,11 +34,10 @@ def load_models() -> None:
 
     # ── Sentiment model ──────────────────────────────────────────────────────
     if _sentiment_pipeline is None:
-
-    logger.info(
+        logger.info(
         "Loading custom trained mood model from Hugging Face: %s ...",
         _CUSTOM_MODEL_REPO,
-    )
+        )
 
     try:
         _sentiment_pipeline = pipeline(
